@@ -55,4 +55,7 @@ async def main():
                 await client.write_gatt_char(CHARACTERISTIC_UUID, b'Q')
             await asyncio.sleep(0.1)
 
-asyncio.run(main())
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
