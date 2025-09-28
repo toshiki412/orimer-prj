@@ -1,5 +1,6 @@
-import cv2 
-from eMeetC960Driver import EMeetC960 
+import cv2
+import numpy as np 
+from camera.eMeetC960Driver import EMeetC960 
 
 class StreamManager:
     '''
@@ -10,22 +11,22 @@ class StreamManager:
         sensor = EMeetC960()
         self.param = sensor.GetSensorParam()
 
-    def Initialize(self, imgH, imgW, ttyUSB):
+    def Open(self, imgH, imgW, ttyUSB):
         self.cap = cv2.VideoCapture(ttyUSB)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, imgW)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, imgH)
 
-    def Finalize(self):
+    def Close(self):
         self.cap.release()
         cv2.destroyAllWindows()
 
-    def GetFrame(self):
+    def GetFrame(self) -> np.ndarray:
         success, frame = self.cap.read()
         if not success:
             print('error no frame')
             exit(0)
         return frame
     
-    def DisplayFrame(frame):
+    def DisplayFrame(self, frame):
         cv2.imshow("camera",frame)
         _ = cv2.waitKey(1)
