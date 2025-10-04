@@ -1,3 +1,4 @@
+import threading
 from camera.streamManager import StreamManager
 from camera.viewManager import ViewManager
 from camera.coordinateTransfer import CoordinateTransfer
@@ -15,12 +16,12 @@ class CameraModuleManager:
         self.coordinateTransfer = CoordinateTransfer(1920, 1080, 800, -30)
         self.yoloMgr = YoloManager("camera/yolo_lib/yolov8n.pt", 640)
 
-    def CameraMainLoop(self):
+    def CameraMainLoop(self, finishEvent : threading.Event):
         
         self.streamMgr.Open(imgH = 1920, imgW = 1080, ttyUSB = 0)
         frameCount = 0
 
-        while True:
+        while not finishEvent.is_set():
 
             frame = self.streamMgr.GetFrame()
             
