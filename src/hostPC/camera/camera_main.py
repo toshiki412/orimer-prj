@@ -23,20 +23,20 @@ class CameraModuleManager:
 
         while not finishEvent.is_set():
 
+            self.viewMgr.ClearWindow()
+            self.viewMgr.DrawAxis()
+
             frame = self.streamMgr.GetFrame()
-            
+
             if self.yoloMgr.Detect(frame):
                 self.yoloMgr.DumpDetails()
                 frame = self.yoloMgr.DrawBBox()
                 robotPosInPixel : tuple = self.yoloMgr.GetPos(CLASS_ID_PETBOTTLE)
                 if robotPosInPixel is not None:
                     robotPosInMiliMeter : tuple = self.coordinateTransfer.Img2World(robotPosInPixel)
-                    
-            self.viewMgr.ClearWindow()
-            self.viewMgr.DrawAxis()
-            self.viewMgr.DrawPoint(robotPosInMiliMeter)
+                    self.viewMgr.DrawPoint(robotPosInMiliMeter)
+            
             self.viewMgr.DisplayWindow()
-
             self.streamMgr.DisplayFrame(frame)
 
             frameCount += 1
