@@ -29,7 +29,7 @@ class CameraModuleManager:
             frame = self.streamMgr.GetFrame()
 
             if self.yoloMgr.Detect(frame):
-                self.yoloMgr.DumpDetails()
+                # self.yoloMgr.DumpDetails()
                 frame = self.yoloMgr.DrawBBox()
                 robotPosInPixel : tuple = self.yoloMgr.GetPos(CLASS_ID_PETBOTTLE)
                 if robotPosInPixel is not None:

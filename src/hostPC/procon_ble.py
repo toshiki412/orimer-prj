@@ -40,6 +40,11 @@ async def main(finishEvent : threading.Event):
                 print("Aボタン -> LED OFF")
                 await client.write_gatt_char(CHARACTERISTIC_UUID, b'Q')
             
+            if controllerMgr.IsButtonTriggered("+"):
+                print("+ボタン -> Finish")
+                await client.write_gatt_char(CHARACTERISTIC_UUID, b'E')
+                finishEvent.set()
+
             await asyncio.sleep(0.1)
 
 def BleMainThread(finishEvent : threading.Event):
