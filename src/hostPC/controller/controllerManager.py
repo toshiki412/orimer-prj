@@ -26,10 +26,10 @@ class ControllerManager:
         axisY = 0
 
         pygame.event.pump()
-        id = controller.keyMap.PROCON_AXIS_MAP("X")
+        id = controller.keyMap.PROCON_AXIS_MAP["X"]
         axisX = self.joystick.get_axis(id)
 
-        id = controller.keyMap.PROCON_AXIS_MAP("Y")
+        id = controller.keyMap.PROCON_AXIS_MAP["Y"]
         axisY = self.joystick.get_axis(id)
         
         return axisX, axisY
@@ -40,7 +40,7 @@ class ControllerManager:
         isButtonTriggered : bool = False
 
         if button == "ZL":
-            id = controller.keyMap.PROCON_AXIS_MAP("ZL")
+            id = controller.keyMap.PROCON_AXIS_MAP["ZL"]
             ZL = self.joystick.get_axis(id)
             if ZL > 0:
                 isButtonTriggered = True
@@ -49,7 +49,7 @@ class ControllerManager:
             return isButtonTriggered
         
         if button == "ZR":
-            id = controller.keyMap.PROCON_AXIS_MAP("ZR")
+            id = controller.keyMap.PROCON_AXIS_MAP["ZR"]
             ZR = self.joystick.get_axis(id)
             if ZR > 0:
                 isButtonTriggered = True
@@ -60,9 +60,9 @@ class ControllerManager:
         buttonNum = self.joystick.get_numbuttons()
         for buttonKey in range(buttonNum):
             if self.joystick.get_button(buttonKey): 
-                if buttonKey == controller.keyMap.PROCON_AXIS_MAP(button):
+                if buttonKey == controller.keyMap.PROCON_BUTTON_MAP[button]:
                     isButtonTriggered = True
-                    print(f"Button {controller.keyMap.PROCON_BUTTON_MAP[buttonKey]}")
+                    print(f"Button {button}")
                     break
         
         return isButtonTriggered

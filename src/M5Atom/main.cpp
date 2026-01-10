@@ -13,9 +13,12 @@
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 
-BLECharacteristic *pCharacteristic;
-bool deviceConnected = false;
+bool g_IsDeviceConnected = false;
 bool ledState = false;
+
+BLECharacteristic *g_pCharacteristic;
+BLEService *g_pService;
+BLEAdvertising *g_pAdvertising;
 
 void printBluetoothMacAddress() {
   const uint8_t* mac = esp_bt_dev_get_address();
@@ -30,16 +33,26 @@ void printBluetoothMacAddress() {
 
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
-      deviceConnected = true;
+      g_IsDeviceConnected = true;
       Serial.println("Device connected");
       printBluetoothMacAddress();
     };
 
     void onDisconnect(BLEServer* pServer) {
-      deviceConnected = false;
+      g_IsDeviceConnected = false;
       Serial.println("Device disconnected");
     }
 };
+
+void FinalizeBLE() {
+    if (g_IsDeviceConnected) {
+      g_IsDeviceConnected = false;
+    }
+    g_pAdvertising->stop();
+    g_pService->stop();
+    BLEDevice::deinit(true);
+    Serial.println("BLE service stopped and cleaned up.");
+}
 
 class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pChar) {
@@ -54,6 +67,8 @@ class MyCallbacks: public BLECharacteristicCallbacks {
         } else if (rxValue == "Q") {
           M5.dis.drawpix(0, CRGB(0, 0, 0));   // LED OFF
           ledState = false;
+        } else if (rxValue == "E") {
+          FinalizeBLE();
         } else  {
           char command = rxValue[0];
           moveMotor(command, 0.5);
@@ -78,22 +93,22 @@ void setup() {
   BLEServer *pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
 
-  BLEService *pService = pServer->createService(SERVICE_UUID);
+  g_pService = pServer->createService(SERVICE_UUID);
 
-  pCharacteristic = pService->createCharacteristic(
+  g_pCharacteristic = g_pService->createCharacteristic(
                       CHARACTERISTIC_UUID,
                       BLECharacteristic::PROPERTY_READ |
                       BLECharacteristic::PROPERTY_WRITE
                     );
 
-  pCharacteristic->setCallbacks(new MyCallbacks());
-  pCharacteristic->setValue("Hello World");
-  pService->start();
+  g_pCharacteristic->setCallbacks(new MyCallbacks());
+  g_pCharacteristic->setValue("Hello World");
+  g_pService->start();
 
-  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(SERVICE_UUID);
-  pAdvertising->setScanResponse(true);
-  pAdvertising->start();
+  g_pAdvertising = BLEDevice::getAdvertising();
+  g_pAdvertising->addServiceUUID(SERVICE_UUID);
+  g_pAdvertising->setScanResponse(true);
+  g_pAdvertising->start();
 
   Serial.println("BLE service started, waiting for client to connect...");
 }
