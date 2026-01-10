@@ -8,7 +8,7 @@
 #include <BLE2902.h>
 
 #include "esp_bt_device.h"
-#include "motor.h"
+#include "action.h"
 
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
@@ -19,6 +19,7 @@ bool ledState = false;
 BLECharacteristic *g_pCharacteristic;
 BLEService *g_pService;
 BLEAdvertising *g_pAdvertising;
+ACTION g_Action;
 
 void printBluetoothMacAddress() {
   const uint8_t* mac = esp_bt_dev_get_address();
@@ -70,8 +71,18 @@ class MyCallbacks: public BLECharacteristicCallbacks {
         } else if (rxValue == "E") {
           FinalizeBLE();
         } else  {
-          char command = rxValue[0];
-          moveMotor(command, 0.5);
+            char command = rxValue[0];
+            const float targetV = 0.5;
+            float targetW = 0.f;
+
+            if (rxValue.length() > 1) {
+                try {
+                    targetW = std::stof(rxValue.substr(1));
+                } catch (...) {
+                    // 変換に失敗した場合、速度はデフォルトのままにする
+                }
+            }
+            g_Action.ManualMoving(targetV, targetW);
         }
       }
     }
@@ -80,8 +91,8 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 void setup() {
   // M5.begin(false, false, true);
   M5.begin(true, false, true);
-  pinMode(MOTOR1_PIN, OUTPUT);
-  pinMode(MOTOR2_PIN, OUTPUT);
+  // pinMode(MOTOR1_PIN, OUTPUT);
+  // pinMode(MOTOR2_PIN, OUTPUT);
 
   Serial.begin(115200);
   delay(5000);
