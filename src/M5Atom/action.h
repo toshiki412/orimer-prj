@@ -8,12 +8,21 @@
 
 #include <iostream>
 #include <cmath>
+#include "motor.h"
+
+// PWMピン
+#define MOTOR_L_PIN0 24
+#define MOTOR_L_PIN1 25
+#define MOTOR_R_PIN0 22
+#define MOTOR_R_PIN1 23
 
 class ACTION {
 private:
     double m_tO;
     double m_MTnW;
     double m_MToW;
+    Motor m_MotorL;
+    Motor m_MotorR;
 
 public:
     ACTION();
@@ -21,6 +30,7 @@ public:
     void Finalize();
     void SetTargetO(double tO);
     void LineControl();
-    void Moving(double output_v);
+    void AutoMoving(double output_v);
+    void ManualMoving(float targetV, float targetW);
     void Odometory();
 };

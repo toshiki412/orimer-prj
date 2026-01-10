@@ -19,17 +19,21 @@ async def main(finishEvent : threading.Event):
             axisX, axisY = controllerMgr.GetAxisState()
             if axisX > 0.5: # →
                 print("→")
-                await client.write_gatt_char(CHARACTERISTIC_UUID, b'R')
+                axisX_str = f"{axisX:.2f}"
+                await client.write_gatt_char(CHARACTERISTIC_UUID, b'R' + axisX_str.encode())
             elif axisX < -0.5: # ←
                 print("←")
-                await client.write_gatt_char(CHARACTERISTIC_UUID, b'L')
+                axisX_str = f"{-axisX:.2f}"
+                await client.write_gatt_char(CHARACTERISTIC_UUID, b'L' + axisX_str.encode())
                 
             if axisY > 0.5: # ↓
                 print("↓")
-                await client.write_gatt_char(CHARACTERISTIC_UUID, b'B')
+                asixY_str = f"{axisY:.2f}" 
+                await client.write_gatt_char(CHARACTERISTIC_UUID, b'B' + asixY_str.encode())
             elif axisY < -0.5: # ↑
                 print("↑")
-                await client.write_gatt_char(CHARACTERISTIC_UUID, b'F')
+                asixY_str = f"{-axisY:.2f}"
+                await client.write_gatt_char(CHARACTERISTIC_UUID, b'F' + asixY_str.encode())
 
             # ボタン
             if controllerMgr.IsButtonTriggered("B"):  # Button B
