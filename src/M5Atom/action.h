@@ -11,10 +11,10 @@
 #include "motor.h"
 
 // PWMピン
-#define MOTOR_L_PIN0 24
+#define MOTOR_L_PIN0 21
 #define MOTOR_L_PIN1 25
-#define MOTOR_R_PIN0 22
-#define MOTOR_R_PIN1 23
+#define MOTOR_R_PIN0 19
+#define MOTOR_R_PIN1 22
 
 class ACTION {
 private:

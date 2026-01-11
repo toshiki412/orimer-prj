@@ -10,16 +10,20 @@ class ControllerManager:
         # 初期化
         pygame.init()
         pygame.joystick.init()
+        self.isConnected : bool = False
 
+    def TryConnect(self) -> bool:
         if pygame.joystick.get_count() == 0:
             print("[Error] Controller Not Found")
-            exit(0)
+            return False
 
         # ジョイスティック情報取得
         self.joystick = pygame.joystick.Joystick(0)
         self.joystick.init()
 
         print(f"Connected Controller !!! : {self.joystick.get_name()}")
+        self.isConnected = True
+        return True
     
     def GetAxisState(self):
         axisX = 0
@@ -36,6 +40,9 @@ class ControllerManager:
     
     # TODO : List 型で返すような仕様にしたほうが安全
     def IsButtonTriggered(self, button):
+        if not self.isConnected:
+            print("[Error] Controller Not Connected")
+            return False
         
         isButtonTriggered : bool = False
 

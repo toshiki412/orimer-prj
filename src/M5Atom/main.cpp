@@ -46,12 +46,14 @@ class MyServerCallbacks: public BLEServerCallbacks {
 };
 
 void FinalizeBLE() {
+    
     if (g_IsDeviceConnected) {
       g_IsDeviceConnected = false;
     }
+
     g_pAdvertising->stop();
     g_pService->stop();
-    BLEDevice::deinit(true);
+    g_pAdvertising->start();
     Serial.println("BLE service stopped and cleaned up.");
 }
 
@@ -120,6 +122,8 @@ void setup() {
   g_pAdvertising->addServiceUUID(SERVICE_UUID);
   g_pAdvertising->setScanResponse(true);
   g_pAdvertising->start();
+
+  g_Action.Initialize();
 
   Serial.println("BLE service started, waiting for client to connect...");
 }
