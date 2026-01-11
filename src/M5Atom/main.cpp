@@ -2,6 +2,7 @@
 // コントローラー上部の sync ボタンでペアリングした後、 home + Y 長押しで接続済みになる
 // 接続したら、procon_ble.pyを実行する
 #include <M5Atom.h>
+#include <WiFi.h>
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
@@ -12,6 +13,9 @@
 
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+
+#define SSID        "JCOM_VTZV"
+#define PASSWORD    "864111687331"
 
 bool g_IsDeviceConnected = false;
 bool ledState = false;
@@ -52,7 +56,6 @@ void FinalizeBLE() {
     }
 
     g_pAdvertising->stop();
-    g_pService->stop();
     g_pAdvertising->start();
     Serial.println("BLE service stopped and cleaned up.");
 }
@@ -61,16 +64,19 @@ class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pChar) {
       std::string rxValue = pChar->getValue();
       if (rxValue.length() > 0) {
-        // Serial.print("Received Value: ");
-        // Serial.println(rxValue.c_str());
+        Serial.printf("Received Value: %s\n", rxValue.c_str());
+        Serial.printf("Received Value Length: %d\n", rxValue.length());
 
         if (rxValue == "X") {
           M5.dis.drawpix(0, CRGB(0, 255, 0)); // LED ON 緑
+          g_Action.ManualMoving(0.5, 0.0);
           ledState = true;
         } else if (rxValue == "Q") {
           M5.dis.drawpix(0, CRGB(0, 0, 0));   // LED OFF
+          g_Action.ManualMoving(0.0, 0.0);
           ledState = false;
         } else if (rxValue == "E") {
+          M5.dis.drawpix(0, CRGB(0, 0, 0));   // LED OFF
           FinalizeBLE();
         } else  {
             char command = rxValue[0];
@@ -92,13 +98,23 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 
 void setup() {
   // M5.begin(false, false, true);
-  M5.begin(true, false, true);
+  M5.begin(true, true, true);
   // pinMode(MOTOR1_PIN, OUTPUT);
   // pinMode(MOTOR2_PIN, OUTPUT);
 
   Serial.begin(115200);
   delay(5000);
-  
+
+  WiFi.begin(SSID, PASSWORD);
+  // 接続完了まで待機
+  Serial.println("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("WiFi connected.");
+
   BLEDevice::init("M5Atom-BLE");
   
   printBluetoothMacAddress();

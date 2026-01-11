@@ -29,6 +29,7 @@
 class Motor {
 public:
     Motor(int pin0, int pin1);
+    void Initialize(int pwmChannel0, int pwmChannel1);
     void Idling();
     void Forward(float inputVol);
     void Backward(float inputVol);
@@ -36,4 +37,7 @@ public:
 private:
     int m_Pin0;
     int m_Pin1;
+
+    int m_PwmChannel0;
+    int m_PwmChannel1;
 };

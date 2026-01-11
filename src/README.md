@@ -37,7 +37,8 @@ pio run
 ysyo8usyopfasu8syouysdaoyuodaswdfyduofydsufyussdyzut
 クリーン　再ビルド
 python -m platformio run -e m5stack-atom --target clean
-python -m platformio run -e m5stack-atom -v
+python -m platformio run -e m5stack-atom
+python -m platformio run -e m5stack-atom -t upload
 
 
 # platform.ini で　メモリ領域を増やす
@@ -65,3 +66,20 @@ build_flags =
 ; (PlatformIO/ESP32 usually strips, but keep this if needed)
 ; build_unflags = -g
 JKL;
+
+# ポート指定でアップロード
+pio run -e m5stack-atom --target upload --upload-port COM3
+
+# シリアルモニタ
+pio device monitor --port COM3 --baud 115200
+
+COM PORT が見つからない場合は platformio.ini で指定して
+pio run -e m5stack-atom --target upload --upload-port COM3
+でできる
+USB のコードによってはできないものがある
+
+tera term で COM を開いていてはいけない
+
+# これで一発
+python -m platformio run -e m5stack-atom --target upload --upload-port COM3
+
