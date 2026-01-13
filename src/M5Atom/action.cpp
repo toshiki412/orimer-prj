@@ -23,11 +23,14 @@ void ACTION::Initialize()
     m_tO = 0.0;
     m_MTnW = 0.0;
     m_MToW = 0.0;
+
+    m_MotorL.Initialize(MOTOR_L_CH0, MOTOR_L_CH1);
+    m_MotorR.Initialize(MOTOR_R_CH0, MOTOR_R_CH1);
 }
 
 void ACTION::Finalize()
 {
-    // Do Nothong
+    // Do Nothing
 }
 
 void ACTION::SetTargetO(double tO) 
@@ -50,6 +53,14 @@ void ACTION::AutoMoving(double output_v)
 void ACTION::ManualMoving(float targetV, float targetW) 
 {
     constexpr float ALPHA = 0.5f; // 旋回時の速度調整係数
+
+    if(targetV == 0.0f && targetW == 0.0f) 
+    {
+        Serial.println("Stop Motors !!");
+        m_MotorL.Stop();
+        m_MotorR.Stop();
+        return;
+    }
     
     float inputVolLeft  = fabs(targetV + ALPHA * targetW);
     float inputVolRight = fabs(targetV - ALPHA * targetW);
@@ -57,19 +68,26 @@ void ACTION::ManualMoving(float targetV, float targetW)
     inputVolLeft  /= (1.0f + ALPHA);
     inputVolRight /= (1.0f + ALPHA);
 
-    if (inputVolLeft < 0.05f || inputVolRight < 0.05f) {
+    Serial.printf("Left Volume: %.2f, Right Volume: %.2f\n", inputVolLeft, inputVolRight);
+
+    if (inputVolLeft < 0.05f && inputVolRight < 0.05f) {
         m_MotorL.Idling();
         m_MotorR.Idling();
         return;
     }
 
-    if (targetV > 0) {
+    if (targetV > 0) 
+    {
+        Serial.println("Go Forward !!");
         m_MotorL.Backward(inputVolLeft);
         m_MotorR.Forward(inputVolRight);
-    } else if (targetV < 0) {
+    } else if (targetV < 0) 
+    {
+        Serial.println("Go Backward !!");
         m_MotorL.Forward(inputVolLeft);
         m_MotorR.Backward(inputVolRight);
-    } else {
+    } else 
+    {
         m_MotorL.Idling();
         m_MotorR.Idling();
     }

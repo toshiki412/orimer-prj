@@ -1,11 +1,20 @@
+import os
+# Must set before any Qt / cv2 / pygame imports
+os.environ['QT_AUTO_SCREEN_SCALE_FACTOR'] = '1'
+os.environ['QT_ENABLE_HIGHDPI_SCALING'] = '1'
+os.environ['PYGAME_DETECT_AVX2'] = '1'
+
 import argparse
 import threading
-import camera_main
+import camera_thread
 import procon_ble
+
+from bleak.backends.winrt.util import uninitialize_sta
+uninitialize_sta()
 
 def RunOnlyCameraThreadForDebug():
     finishEvent = threading.Event()
-    cameraThread = threading.Thread(target=camera_main.CameraMainThread, args=(finishEvent,))
+    cameraThread = threading.Thread(target=camera_thread.CameraMainThread, args=(finishEvent,))
     cameraThread.start()
     try:
         cameraThread.join()
@@ -28,7 +37,7 @@ def RunOnlyBleThreadForDebug():
 def Main():
     finishEvent = threading.Event()
 
-    cameraThread = threading.Thread(target=camera_main.CameraMainThread, args=(finishEvent,))
+    cameraThread = threading.Thread(target=camera_thread.CameraMainThread, args=(finishEvent,))
     bleThread = threading.Thread(target=procon_ble.BleMainThread, args=(finishEvent,))
     
     cameraThread.start()

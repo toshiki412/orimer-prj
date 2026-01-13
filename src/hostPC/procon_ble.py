@@ -1,19 +1,33 @@
 import asyncio
 import threading
 import time
-import camera_main
+import camera_thread
 from bleak import BleakClient
 import pygame
 from controller.controllerManager import ControllerManager
+
+from bleak.backends.winrt.util import uninitialize_sta
+uninitialize_sta()
+
+try:
+    import pythoncom
+except Exception:
+    pythoncom = None
+
 # M5 atom の情報
 ADDRESS = "90:15:06:FA:D3:E6"
 CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 
 async def main(finishEvent : threading.Event):
-    async with BleakClient(ADDRESS) as client:
-        
-        controllerMgr = ControllerManager()
+    
+    controllerMgr = ControllerManager()
+    
+    if not controllerMgr.TryConnect():
+        finishEvent.set()
+        return
 
+    async with BleakClient(ADDRESS) as client:
+        print("Connected to BLE device")
         while not finishEvent.is_set():
             # アナログスティック
             axisX, axisY = controllerMgr.GetAxisState()
@@ -53,7 +67,17 @@ async def main(finishEvent : threading.Event):
 
 def BleMainThread(finishEvent : threading.Event):
     print("Start ble thread")
-    asyncio.run(main(finishEvent))
-
-if __name__ == '__main__':
-    asyncio.run(main(threading.Event()))
+    # If pythoncom is available, initialize COM as MTA on this thread
+    if pythoncom:
+        try:
+            pythoncom.CoInitializeEx(pythoncom.COINIT_MULTITHREADED)
+        except Exception as e:
+            print("pythoncom.CoInitializeEx failed:", e)
+    try:
+        asyncio.run(main(finishEvent))
+    finally:
+        if pythoncom:
+            try:
+                pythoncom.CoUninitialize()
+            except Exception:
+                pass
