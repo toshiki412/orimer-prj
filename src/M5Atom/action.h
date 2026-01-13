@@ -11,8 +11,8 @@
 #include "motor.h"
 
 // PWMピン
-#define MOTOR_L_PIN0 21 // BIN2
-#define MOTOR_L_PIN1 23 // BIN1
+#define MOTOR_L_PIN0 25 // BIN2
+#define MOTOR_L_PIN1 21 // BIN1
 #define MOTOR_R_PIN0 19 // AIN2
 #define MOTOR_R_PIN1 22 // AIN1
 

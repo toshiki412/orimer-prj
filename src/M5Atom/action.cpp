@@ -53,6 +53,14 @@ void ACTION::AutoMoving(double output_v)
 void ACTION::ManualMoving(float targetV, float targetW) 
 {
     constexpr float ALPHA = 0.5f; // 旋回時の速度調整係数
+
+    if(targetV == 0.0f && targetW == 0.0f) 
+    {
+        Serial.println("Stop Motors !!");
+        m_MotorL.Stop();
+        m_MotorR.Stop();
+        return;
+    }
     
     float inputVolLeft  = fabs(targetV + ALPHA * targetW);
     float inputVolRight = fabs(targetV - ALPHA * targetW);
@@ -70,10 +78,12 @@ void ACTION::ManualMoving(float targetV, float targetW)
 
     if (targetV > 0) 
     {
+        Serial.println("Go Forward !!");
         m_MotorL.Backward(inputVolLeft);
         m_MotorR.Forward(inputVolRight);
     } else if (targetV < 0) 
     {
+        Serial.println("Go Backward !!");
         m_MotorL.Forward(inputVolLeft);
         m_MotorR.Backward(inputVolRight);
     } else 
