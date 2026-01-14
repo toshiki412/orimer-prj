@@ -13,11 +13,12 @@ class VideoReceiver:
 
         self.sendData : bytes = struct.pack('>iiiiQ', 0,0,0,0,0)
         self.timestamp : int = 0
-        self.receiveImg : np.ndarray
+        self.receiveImg : np.ndarray = None
+        self.frameId : int = 0
         
-    def start(self):
+    def start(self, finishEvent : threading.Event):
         self.running = True
-        self.thread = threading.Thread(target=self.receive_loop)
+        self.thread = threading.Thread(target=self.__receive_loop, args=(finishEvent,))
         self.thread.start()
         
     def stop(self):
@@ -27,10 +28,13 @@ class VideoReceiver:
     def UpdateSendData(self, x1 : int, y1 : int, x2 : int, y2 : int):
         self.sendData : bytes = struct.pack('>iiiiQ', x1, y1, x2, y2, self.timestamp)
     
+    def GetFrameId(self):
+        return self.frameId
+    
     def GetReceiveImg(self):
         return self.receiveImg
-        
-    def receive_loop(self):
+
+    def __receive_loop(self, finishEvent: threading.Event):
         global g_endFlag
         print("serverloop")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -45,10 +49,12 @@ class VideoReceiver:
             with conn:
                 print(f'Connected: {addr}')
 
-                self.UpdateSendData(0,0,0,0,0)#初期化
+                self.UpdateSendData(0,0,0,0)#初期化
                 while self.running:
-                    if g_endFlag:
+                    
+                    if finishEvent.is_set():
                         break
+
                     try:
                         # ヘッダ受信（12バイト: タイムスタンプ8 + サイズ4）
                         header = conn.recv(12)
@@ -64,12 +70,13 @@ class VideoReceiver:
                             img_data += conn.recv(4096 if remaining > 4096 else remaining)
                             
                         self.receiveImg = cv2.imdecode(np.frombuffer(img_data, np.uint8), cv2.IMREAD_COLOR)
+                        self.frameId += 1
 
                         conn.sendall(self.sendData)
 
                         # cv2.imshow(f'Stream [{addr[0]}]', img)
-                        if cv2.waitKey(1) == 27:
-                            break
+                        # if cv2.waitKey(1) == 27:
+                        #     break
                             
                     except (ConnectionResetError, BrokenPipeError, KeyboardInterrupt):
                        break

@@ -1,4 +1,6 @@
 import os
+
+from receiver import ReceiverThread
 # Must set before any Qt / cv2 / pygame imports
 os.environ['QT_AUTO_SCREEN_SCALE_FACTOR'] = '1'
 os.environ['QT_ENABLE_HIGHDPI_SCALING'] = '1'
@@ -33,7 +35,12 @@ def RunOnlyBleThreadForDebug():
     except KeyboardInterrupt:
         finishEvent.set()
         bleThread.join()
-    
+
+def RunForRaspy():
+    finishEvent = threading.Event()
+    ReceiverThread(finishEvent)
+    finishEvent.set()
+
 def Main():
     finishEvent = threading.Event()
 
@@ -65,6 +72,9 @@ def PaeseArgs():
     #ble のみを動かす場合
     parser.add_argument("--only_ble",action='store_true')
 
+    #raspy を動かす場合
+    parser.add_argument("--raspy",action='store_true')
+
     args = parser.parse_args()
     return args
 
@@ -76,6 +86,9 @@ if __name__ == '__main__':
     
     elif args.only_ble:
         RunOnlyBleThreadForDebug()
-        
+
+    elif args.raspy:
+        RunForRaspy()
+
     else:
         Main()

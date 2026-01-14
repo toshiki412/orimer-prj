@@ -24,8 +24,8 @@ class YoloManager:
         self.imgsz = imgSize
 
         # 最初の処理で load が走るので一回 dummy で処理しておく
-        dummyFrame = np.zeros((640, 640, 3), dtype=np.uint8)  # 空画像を用意
-        results = self.model.predict(dummyFrame, imgsz=640, conf=0.6, verbose=False)
+        dummyFrame = np.zeros((1280, 720, 3), dtype=np.uint8)  # 空画像を用意
+        results = self.model.predict(dummyFrame, imgsz=(1280, 720), conf=0.6, verbose=False)
         self.result = results[0]
 
     def Detect(self, frame):
@@ -63,8 +63,8 @@ class YoloManager:
             print("coodinate : ",coodinate)
             print("\n")
         print("------\n\n")
-    
-    def GetPos(self, classId)-> tuple:
+
+    def GetBBox(self, classId) -> list:
         if self.result is None:
             return None
 
@@ -81,9 +81,12 @@ class YoloManager:
                 max_conf = conf
                 best_coordinate = coordinate
 
+        return best_coordinate
+    
+    def GetPos(self, classId)-> tuple:
+        best_coordinate = self.GetBBox(classId)
         if best_coordinate is None:
             return None
-        
         x1, y1, x2, y2 = best_coordinate
         posX = int((x1 + x2) // 2)
         posY = int((y1 + y2) // 2)
