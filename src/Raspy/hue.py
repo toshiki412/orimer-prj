@@ -1,5 +1,5 @@
-import time
 import threading
+import time
 import matplotlib.pyplot as plt
 import pyaudio as pa
 import numpy as np
@@ -10,8 +10,10 @@ from PIL import Image, ImageFont, ImageDraw
 # https://skimie.com/articles/6a3bfa82712f59cb6b5a6c10d7
 
 
-RATE=44100
-BUFFER_SIZE=16384
+RATE=16000
+BUFFER_SIZE=4096
+# RATE=44100
+# BUFFER_SIZE=16384
 THRESHOLD = 1475361 # ← ここを調整（大きいほど強い音だけ反応）
 
 HEIGHT=300
@@ -48,17 +50,6 @@ class HueDevice:
         self.audio.terminate()
 
     def TryConnect(self):
-        isConnected = False
-        for i in range(self.audio.get_device_count()):
-            info = self.audio.get_device_info_by_index(i)
-            if info['maxInputChannels'] > 0:
-                print(f"device {i}: {info['name']}")
-                isConnected = True
-        
-        if not isConnected:
-            print("[Error] Hue Device Not Found")
-            return False
-        
         self.running = True
         self.thread = threading.Thread(target=self.__Loop, daemon=True)
         self.thread.start()
@@ -80,7 +71,8 @@ class HueDevice:
             self.scale_name = self.__Detect()
             
     def __Detect(self):
-        audio_data = self.stream.read(BUFFER_SIZE)
+        audio_data = self.stream.read(BUFFER_SIZE, exception_on_overflow=False)
+
         data = np.frombuffer(audio_data, dtype='int16')
 
         rms = np.sqrt(np.mean(data**2))
@@ -100,6 +92,7 @@ class HueDevice:
         offset = 0.5 if val >= 440 else -0.5
         scale_num = int(np.log2((val/440.0)**12) + offset) % len(SCALE)
         scale_name = SCALE[scale_num]
+
         if peak > PEAK_THRESHOLD and rms  < 50:
             return scale_name
         return None
