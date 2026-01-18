@@ -58,6 +58,7 @@ class HueDevice:
     
     def IsTriggered(self, name):
         if name == self.GetScale():
+            print(f"Hue Device Triggered: {name}")
             return True
         return False
 

@@ -1,7 +1,6 @@
 import argparse
 import math
 import threading
-from client import CAMERA
 from gpiozero import MCP3208, PWMOutputDevice
 from time import sleep
 from controllerManager import ControllerManager
@@ -17,6 +16,7 @@ RtoD = math.pi / 180.0
  
 
 def FollowPerson():
+    from client import CAMERA
     cameraObject = CAMERA()
     cameraObject.Initialize()
 
@@ -88,19 +88,22 @@ def HueControl():
     try:
         while True:
             if hueDevice.IsTriggered("ド"):
-                action.ManualMoving(0.5, 0)
+                action.ManualMoving(1.0, 0)
             elif hueDevice.IsTriggered("レ"):
-                action.ManualMoving(-0.5, 0)
+                action.ManualMoving(-1.0, 0)
             elif hueDevice.IsTriggered("ミ"):
-                action.ManualMoving(0, 0.5)
+                action.ManualMoving(0, 1000.0)
             elif hueDevice.IsTriggered("ファ"):
-                action.ManualMoving(0, -0.5)
+                action.ManualMoving(0, -1000.0)
             elif hueDevice.IsTriggered("ソ"):
-                action.ManualMoving(0.5, 0.5)
+                action.ManualMoving(1.0, 1000.0)
             elif hueDevice.IsTriggered("ラ"):
-                action.ManualMoving(-0.5, -0.5)
+                action.ManualMoving(-1.0, -1000.0)
             elif hueDevice.IsTriggered("シ"):
                 action.ManualMoving(0, 0)
+            else:
+                action.ManualMoving(0, 0)
+            
     except KeyboardInterrupt:
         print("Exiting Hue Control.")
 
