@@ -1,182 +1,347 @@
+import random
+from typing import List
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from matplotlib.patches import Circle, Arrow
-import random
 
+# ===============================
+# UWB
+# ===============================
+class UWB:
+    def __init__(self, robot):
+        self.SensorError = 0.05  # [m]
+        self.robot = robot
+
+    def GetDistance(self, i, j):
+        xi, yi = self.robot[i].GetPos()
+        xj, yj = self.robot[j].GetPos()
+        d = np.hypot(xi - xj, yi - yj)
+        return max(0.01, d + np.random.normal(0, self.SensorError))
+
+
+# ===============================
+# Robot
+# ===============================
 class Robot:
-    def __init__(self, robot_id):
-        self.id = robot_id
+    def __init__(self, id):
+        self.id = id
+        self.x = random.uniform(-0.8, 0.8)
+        self.y = random.uniform(-0.8, 0.8)
+        self.theta = random.uniform(0, 360)
+        self.v = 0.0
+        self.w = 0.0
 
-        # 初期位置・姿勢ランダム
-        self.x = random.uniform(0.2, 0.8)  # x位置 (m)
-        self.y = random.uniform(0.2, 0.8)  # y位置 (m)
-        self.theta = random.uniform(0, 360)  # 姿勢角 (deg)
-        # 速度 (cm/s -> m/s変換)
-        self.v = 0.0  # 前進速度 (m/s)
-        self.w = 0.0  # 旋回速度 (deg/s)
-    
-    def measure_distance(self, other_robot):
-        """他のロボットとの距離測定 (±5cm誤差)"""
-        true_dist = np.sqrt((other_robot.x)**2 + (other_robot.y)**2)
-        noise = np.random.normal(0, 0.05)  # ±5cm = σ=5cm
-        measured_dist = max(0.01, true_dist + noise)  # 0m未満回避
-        return measured_dist
-    
-    def update_control(self, other_robots):
-        """距離測定のみで重心方向を推定して制御"""
-        if len(other_robots) == 0:
-            return
-        
-        target_dist = 0.10  # 10cm
-        
-        # 1. 距離測定（自分以外）
-        distances = [self.measure_distance(other) for other in other_robots]
-        avg_dist = np.mean(distances)
-        
-        # 2. 前進速度：平均距離を10cmに保つ
-        dist_error = avg_dist - target_dist
-        kp_v = 0.5
-        self.v = kp_v * dist_error
-        self.v = np.clip(self.v, 0, 0.10)
-        
-        # 3. 重心方向推定：距離勾配法（分散版）
-        # 各ロボットからの「引力ベクトル」を合成
-        total_force_x = 0
-        total_force_y = 0
-        
-        for other in other_robots:
-            # 相対位置ベクトル（距離誤差で強度調整）
-            true_dx = other.x - self.x
-            true_dy = other.y - self.y
-            dist = np.sqrt(true_dx**2 + true_dy**2)
-            
-            if dist > 0:
-                # 距離が目標より遠いほど強く引き寄せる
-                force_mag = (target_dist / dist) ** 2  # 逆二乗則
-                total_force_x += force_mag * true_dx / dist
-                total_force_y += force_mag * true_dy / dist
-        
-        # 4. 合成ベクトルの方向へ旋回
-        if np.sqrt(total_force_x**2 + total_force_y**2) > 0.01:
-            target_angle = np.degrees(np.arctan2(total_force_y, total_force_x))
-            angle_error = (target_angle - self.theta + 180) % 360 - 180
-            kp_w = 2.0
-            self.w = -kp_w * angle_error
-            self.w = np.clip(self.w, -90, 90)
-        else:
-            self.w = 0.0
-    
-    def update_pose(self, dt):
-        """位置・姿勢更新（対抗二輪運動学）"""
-        # ラジアンに変換
-        theta_rad = np.radians(self.theta)
-        
-        # 位置更新
-        self.x += self.v * np.cos(theta_rad) * dt
-        self.y += self.v * np.sin(theta_rad) * dt
-        
-        # 姿勢更新
-        self.theta += self.w * dt
-        self.theta = self.theta % 360
-    
-    def get_pose(self):
-        return (self.x, self.y, self.theta)
+    def Move(self, v, w):
+        self.v = v
+        self.w = w
 
-class SwarmSimulation:
-    def __init__(self):
-        self.robots = [Robot(i) for i in range(3)]
-        self.dt = 0.1  # シミュレーション時間刻み (s)
-        self.time = 0
-        
-        # 描画設定
-        self.fig, self.ax = plt.subplots(figsize=(8, 8), facecolor='black')
-        self.ax.set_xlim(-0.1, 1.1)
-        self.ax.set_ylim(-0.1, 1.1)
-        self.ax.set_aspect('equal')
-        self.ax.set_facecolor('black')
-        self.ax.axis('off')
-        
-        self.robot_circles = []
-        self.robot_arrows = []
-        self.trails = []
-        
-        # 初期描画要素作成
-        for i in range(3):
-            circle = Circle((0, 0), 0.03, fc=f'C{i}', ec='white', alpha=0.8)
-            arrow = Arrow(0, 0, 0, 0, width=0.015, color='white')
-            trail, = self.ax.plot([], [], 'o-', color=f'C{i}', alpha=0.5, markersize=2)
-            
-            self.ax.add_patch(circle)
-            self.ax.add_patch(arrow)
-            self.robot_circles.append(circle)
-            self.robot_arrows.append(arrow)
-            self.trails.append(trail)
+    def UpdateOdometry(self, dt):
+        th = np.radians(self.theta)
+        self.x += self.v * np.cos(th) * dt
+        self.y += self.v * np.sin(th) * dt
+        self.theta = (self.theta + self.w * dt) % 360
+
+    def GetPos(self):
+        return self.x, self.y
+
+
+# ===============================
+# Swarm Controller
+# ===============================
+class SwarmController:
+    def __init__(self, n, ax):
+        self.robot = [Robot(i) for i in range(n)]
+        self.uwb = UWB(self.robot)
+        self.dt = 0.1
+        self.ax = ax
+
+        self.true_scatter = ax.scatter([], [], c='b', label='True')
+        self.est_scatter  = ax.scatter([], [], c='r', marker='x', label='UWB')
+        self.mirror_scatter = ax.scatter([], [], c='g', s=100, label='Mirror')
+
+        ax.set_xlim(-2, 2)
+        ax.set_ylim(-2, 2)
+        ax.set_aspect('equal')
+        ax.grid()
+        ax.legend()
+
+    # -------------------------------
+    # UWB reconstruction (6 points)
+    # -------------------------------
+    def UWBReconstruct(self):
+        d01 = self.uwb.GetDistance(0, 1)
+        d02 = self.uwb.GetDistance(0, 2)
+        d03 = self.uwb.GetDistance(0, 3)
+        d12 = self.uwb.GetDistance(1, 2)
+        d13 = self.uwb.GetDistance(1, 3)
+
+        c12 = np.clip((d01**2 + d02**2 - d12**2)/(2*d01*d02), -1, 1)
+        c13 = np.clip((d01**2 + d03**2 - d13**2)/(2*d01*d03), -1, 1)
+
+        r0 = (0, 0)
+        r1 = (d01, 0)
+        r2 = (d02*c12, d02*np.sqrt(1-c12**2))
+        r3 = (d03*c13, d03*np.sqrt(1-c13**2))
+        r4 = (r2[0], -r2[1])  # mirror of r2
+        r5 = (r3[0], -r3[1])  # mirror of r3
+
+        return [r0, r1, r2, r3, r4, r5]
+
+    # -------------------------------
+    # Global → Local
+    # -------------------------------
+    def _global_to_local(self, xs, ys):
+        x0, y0 = self.robot[0].GetPos()
+        x1, y1 = self.robot[1].GetPos()
+
+        xs = np.array(xs) - x0
+        ys = np.array(ys) - y0
+        ang = np.arctan2(y1 - y0, x1 - x0)
+
+        c, s = np.cos(-ang), np.sin(-ang)
+        xl = c*xs - s*ys
+        yl = s*xs + c*ys
+        return xl, yl
     
-    def update_control_all(self):
-        """全ロボットの制御更新 (1秒ごと)"""
-        if int(self.time * 10) % 10 == 0:  # 0.1s刻みで1秒間隔
-            for robot in self.robots:
-                other_robots = [r for r in self.robots if r != robot]
-                robot.update_control(other_robots)
-    
-    def simulation_step(self):
-        """1ステップシミュレーション"""
-        self.update_control_all()
-        
-        # 全ロボット姿勢更新
-        for robot in self.robots:
-            robot.update_pose(self.dt)
-            # 範囲内に制限
-            robot.x = np.clip(robot.x, 0, 1.0)
-            robot.y = np.clip(robot.y, 0, 1.0)
-        
-        self.time += self.dt
-    
-    def animate(self, frame):
-        """アニメーション更新"""
-        self.simulation_step()
-        
-        for i, robot in enumerate(self.robots):
-            x, y, theta = robot.get_pose()
-            
-            # ロボット本体（円）
-            self.robot_circles[i].center = (x, y)
-            
-            # 向き（矢印）
-            arrow_len = 0.04
-            dx = arrow_len * np.cos(np.radians(theta))
-            dy = arrow_len * np.sin(np.radians(theta))
-            self.robot_arrows[i].remove()
-            self.robot_arrows[i] = Arrow(x, y, dx, dy, width=0.015, color='white')
-            self.ax.add_patch(self.robot_arrows[i])
-            
-            # 軌跡
-            trail_x, trail_y = self.trails[i].get_data()
-            trail_x = np.append(trail_x, x)
-            trail_y = np.append(trail_y, y)
-            # 古い軌跡を削除
-            if len(trail_x) > 100:
-                trail_x = trail_x[-100:]
-                trail_y = trail_y[-100:]
-            self.trails[i].set_data(trail_x, trail_y)
-            
-            # 距離表示（デバッグ用）
-            if frame % 50 == 0:
-                dists = [robot.measure_distance(other) for other in self.robots if other != robot]
-                print(f"Robot {i}: pos=({x:.2f},{y:.2f}), dists={np.mean(dists):.2f}m")
-        
-        self.ax.set_title(f'Swarm Robot Simulation (t={self.time:.1f}s)', color='white')
-        return self.robot_circles + self.robot_arrows + self.trails
-    
-    def run(self):
-        """シミュレーション実行"""
-        anim = animation.FuncAnimation(
-            self.fig, self.animate, frames=1000, interval=50, blit=False, repeat=True
-        )
-        plt.tight_layout()
-        plt.show()
+    def _local_to_global(self, xl, yl):
+        """
+        ローカル座標 (Robot0原点, x軸: R0->R1方向) -> Global座標
+        xl, yl : array-like
+        """
+        x0, y0 = self.robot[0].GetPos()
+        x1, y1 = self.robot[1].GetPos()
+
+        ang = np.arctan2(y1 - y0, x1 - x0)
+
+        # 回転（逆回転の逆なので +ang）
+        xs = np.cos(ang)*xl - np.sin(ang)*yl
+        ys = np.sin(ang)*xl + np.cos(ang)*yl
+
+        # 平行移動
+        xs += x0
+        ys += y0
+
+        return xs, ys
+
+    def FormationControl(self):
+        # UWB再構成（ローカル座標）
+        pos = self.UWBReconstruct()
+
+        # =========================
+        # 目標距離（設計パラメータ）
+        # =========================
+        d_star = {
+            (0,1): 0.6,
+            (0,2): 0.6,
+            (0,3): 0.6,
+            (1,2): 0.6,
+            (1,3): 0.6,
+        }
+
+        K = 2.0   # 距離拘束ゲイン
+
+        for i in range(4):
+            force = np.zeros(2)
+
+            for (a, b), d_ref in d_star.items():
+                if i not in (a, b):
+                    continue
+
+                j = b if i == a else a
+
+                dx = pos[i][0] - pos[j][0]
+                dy = pos[i][1] - pos[j][1]
+                d  = np.hypot(dx, dy) + 1e-6
+
+                # 距離誤差
+                e = d - d_ref
+
+                # バネ力（勾配）
+                force += -K * e * np.array([dx, dy]) / d
+
+            # =========================
+            # 力 → 速度変換（非ホロノミック）
+            # =========================
+            theta = np.radians(self.robot[i].theta)
+            heading = np.array([np.cos(theta), np.sin(theta)])
+
+            forward = np.dot(force, heading)
+
+            v = np.clip(forward, -0.1, 0.1)
+
+            if np.linalg.norm(force) > 1e-3:
+                target = np.degrees(np.arctan2(force[1], force[0]))
+                err = (target - self.robot[i].theta + 180) % 360 - 180
+                w = np.clip(-2.0 * err, -90, 90)
+            else:
+                v = 0.0
+                w = 0.0
+
+            self.robot[i].Move(v, w)
+
+    # -------------------------------
+    # Boids control (FIXED)
+    # -------------------------------
+    def BoidsControl(self):
+        all_local_pos = self.UWBReconstruct()
+        all_pos = all_local_pos
+        for i in range(6):
+            all_pos[i] = self._local_to_global(all_local_pos[i][0], all_local_pos[i][0])
+
+        K_ANCHOR = 10.0    # ★ Robot0への引力（かなり強く）
+        K_SEP    = 1.0
+        K_COH    = 0.3
+
+        for i in range(4):
+            separation = np.zeros(2)
+            cohesion   = np.zeros(2)
+
+            # =========================
+            # ★ Robot0 への強制引力 ★
+            # =========================
+            if i != 0:
+                dx0 = all_pos[0][0] - all_pos[i][0]
+                dy0 = all_pos[0][1] - all_pos[i][1]
+                d0  = np.hypot(dx0, dy0) + 1e-6
+
+                # 距離に比例する強力な引力
+                cohesion += K_ANCHOR * np.array([dx0, dy0]) * d0
+                print(i, cohesion)
+
+            # =========================
+            # 通常 Boids（弱め）
+            # =========================
+            pairs = []
+            for k in range(6):
+                if i == k:
+                    continue
+                if (i == 2 and k == 4) or (i == 3 and k == 5):
+                    continue
+
+                dx = all_pos[k][0] - all_pos[i][0]
+                dy = all_pos[k][1] - all_pos[i][1]
+                d  = np.hypot(dx, dy)
+                if d < 1e-3:
+                    continue
+                pairs.append((d, dx, dy))
+
+            pairs.sort(key=lambda x: x[0])
+
+            for d, dx, dy in pairs[:3]:
+                if d < 0.4:
+                    separation -= K_SEP * np.array([dx, dy])
+                else:
+                    cohesion   += K_COH * np.array([dx, dy])
+
+            # =========================
+            # 速度・角速度
+            # =========================
+            vec = cohesion + separation
+            v = np.clip(0.5*np.linalg.norm(vec), 0, 0.1)
+
+            if np.linalg.norm(vec) > 1e-3:
+                target = np.degrees(np.arctan2(vec[1], vec[0]))
+                err = (target - self.robot[i].theta + 180) % 360 - 180
+                w = np.clip(-1.5 * err, -90, 90)
+            else:
+                w = 0.0
+
+            if i != 0:
+                self.robot[i].Move(v, w)
+            else:
+                self.robot[i].Move(0.1, 0.1)
+    # -------------------------------
+    # Update
+    # -------------------------------
+    def Update(self):
+        vec_list = []  # 描画用ベクトル保存
+        all_pos = self.UWBReconstruct()
+
+        # Boids制御（またはFormation制御）
+        self.BoidsControl()  
+
+        xs, ys = [], []
+        vecs = []  # Local矢印用
+        for i, r in enumerate(self.robot):
+            r.UpdateOdometry(self.dt)
+            x, y = r.GetPos()
+            xs.append(x)
+            ys.append(y)
+
+        # Local座標に変換
+        xl, yl = self._global_to_local(xs, ys)
+
+        # ベクトルもLocalに変換
+        for i, r in enumerate(self.robot):
+            # 進行方向の速度ベクトル
+            theta = np.radians(r.theta)
+            vec = np.array([r.v * np.cos(theta), r.v * np.sin(theta)])
+            # 原点を Robot0 に合わせる
+            vec_local_x = np.cos(-np.arctan2(self.robot[1].y - self.robot[0].y,
+                                            self.robot[1].x - self.robot[0].x)) * vec[0] - \
+                        np.sin(-np.arctan2(self.robot[1].y - self.robot[0].y,
+                                            self.robot[1].x - self.robot[0].x)) * vec[1]
+            vec_local_y = np.sin(-np.arctan2(self.robot[1].y - self.robot[0].y,
+                                            self.robot[1].x - self.robot[0].x)) * vec[0] + \
+                        np.cos(-np.arctan2(self.robot[1].y - self.robot[0].y,
+                                            self.robot[1].x - self.robot[0].x)) * vec[1]
+            vecs.append((vec_local_x, vec_local_y))
+
+        # Scatter更新
+        self.true_scatter.set_offsets(np.c_[xl[:4], yl[:4]])
+        est = self.UWBReconstruct()
+        ex = [p[0] for p in est[:4]]
+        ey = [p[1] for p in est[:4]]
+        self.est_scatter.set_offsets(np.c_[ex, ey])
+        self.mirror_scatter.set_offsets(np.c_[xl[2:], -yl[2:]])
+
+        # 既存の矢印を削除して再描画
+        if hasattr(self, 'vec_quiver'):
+            self.vec_quiver.remove()
+        self.vec_quiver = self.ax.quiver(xl[:4], yl[:4],
+                                        [v[0] for v in vecs[:4]],
+                                        [v[1] for v in vecs[:4]],
+                                        color='orange', scale=0.05)
+
+        return self.true_scatter, self.est_scatter, self.mirror_scatter, self.vec_quiver
+
+
+# ===============================
+# Main
+# ===============================
+def Main():
+    import copy
+    fig_local, ax_local = plt.subplots()
+    fig_global, ax_global = plt.subplots()
+
+    # 元の SwarmController を初期化
+    from __main__ import SwarmController
+    swarm = SwarmController(4, ax_local)
+
+    # Global用 scatter
+    global_scatter = ax_global.scatter([], [], c='blue', s=80, label='Global True')
+    ax_global.set_xlim(-2, 2)
+    ax_global.set_ylim(-2, 2)
+    ax_global.set_aspect('equal')
+    ax_global.grid()
+    ax_global.set_title("Global Coordinate (True Positions)")
+    ax_global.legend()
+
+    def animate(frame):
+        # Local(UWB +鏡像) 更新
+        local_artists = swarm.Update()
+
+        # Global更新（真値）
+        true_x = [r.GetPos()[0] for r in swarm.robot]
+        true_y = [r.GetPos()[1] for r in swarm.robot]
+        global_scatter.set_offsets(np.c_[true_x, true_y])
+        ax_global.set_title(f"Global Coordinate (t={frame*swarm.dt:.1f}s)")
+
+        return local_artists + (global_scatter,)
+
+    ani = animation.FuncAnimation(fig_local, animate, frames=500, interval=100, blit=False)
+    plt.show()
+
 
 if __name__ == "__main__":
-    sim = SwarmSimulation()
-    sim.run()
+    Main()
