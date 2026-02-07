@@ -62,6 +62,7 @@ bool Send(const ControlState& state)
 
     if (!g_pServer->IsConnected())
     {
+        Serial.println("not connected...\n");
         return false;
     }
 

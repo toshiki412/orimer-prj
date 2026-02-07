@@ -20,22 +20,20 @@ namespace orimer::ble {
 class ServerCallbacks : public NimBLEServerCallbacks
 {
 public:
-    explicit ServerCallbacks(BleServer* pOwner)
-        : m_pOwner(pOwner)
-    {
-    }
+    explicit ServerCallbacks(BleServer* owner)
+        : m_pOwner(owner)
+    {}
 
-    void onConnect(NimBLEServer*)
+    void onConnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo) override
     {
-        Serial.println("[BLE][Server] Connected");
+        Serial.println("[BLE][Server] Client connected");
         m_pOwner->OnConnected();
     }
 
-    void onDisconnect(NimBLEServer*)
+    void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override
     {
-        Serial.println("[BLE][Server] Disconnected");
+        Serial.printf("[BLE][Server] Client disconnected, reason=%d\n", reason);
         m_pOwner->OnDisconnected();
-        NimBLEDevice::startAdvertising();
     }
 
 private:
@@ -49,6 +47,8 @@ BleServer::BleServer()
 
 void BleServer::Begin(const char* pDeviceName)
 {
+    Serial.println("[BLE][Server] Begin");
+
     NimBLEDevice::init(pDeviceName);
 
     NimBLEServer* pServer =
@@ -63,6 +63,7 @@ void BleServer::Begin(const char* pDeviceName)
     g_pCharacteristic =
         pService->createCharacteristic(
             k_CharacteristicUuid,
+            NIMBLE_PROPERTY::READ |
             NIMBLE_PROPERTY::NOTIFY
         );
 
@@ -70,7 +71,17 @@ void BleServer::Begin(const char* pDeviceName)
 
     NimBLEAdvertising* pAdvertising =
         NimBLEDevice::getAdvertising();
-    pAdvertising->addServiceUUID(k_ServiceUuid);
+    
+    NimBLEAdvertisementData advData;
+    NimBLEAdvertisementData scanData;
+
+    advData.setName("Atom-Server");
+    advData.addServiceUUID(k_ServiceUuid);
+    scanData.addServiceUUID(k_ServiceUuid);
+
+    pAdvertising->setAdvertisementData(advData);
+    pAdvertising->setScanResponseData(scanData);
+
     pAdvertising->start();
 
     Serial.println("[BLE][Server] Advertising start");
@@ -80,6 +91,7 @@ void BleServer::Update(const ControlState& state)
 {
     if (!m_IsConnected || g_pCharacteristic == nullptr)
     {
+        Serial.println("null data");
         return;
     }
 

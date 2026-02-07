@@ -2,63 +2,85 @@
 #include "ble/ble_api.h"
 #include "ble/ble_types.h"
 
-// #define ORIMER_BLE_SERVER
-#define ORIMER_BLE_CLIENT
+#include "led/led_api.h"
+#include "led/led_types.h"
 
+#define ORIMER_BLE_SERVER
+// #define ORIMER_BLE_CLIENT
+
+
+namespace orimer{
 namespace
 {
-    orimer::ble::ControlState g_State{};
+    ble::ControlState g_State{};
 
     void PrintInfo(const char* pName, const char* pInfo) noexcept
     {
         Serial.printf("[%s] %s\n", pName, pInfo);
     }
+
 } // namespace
 
-#if defined (ORIMER_BLE_SERVER)
-void setup()
-{
-    Serial.begin(115200);
-    delay(2000);
-
-    M5.begin(true, true, true);
-    orimer::ble::InitServer("Atom-Server");
-
-    PrintInfo("Main", "Setup Done");
-}
-
-void loop()
-{
-    g_State.btn++;
-    g_State.dir = orimer::ble::StickDir::Right;
-    orimer::ble::Send(g_State);
-}
-#endif // defined (ORIMER_BLE_SERVER)
-
-#if defined (ORIMER_BLE_CLIENT)
-
-void setup()
-{
-    Serial.begin(115200);
-    M5.begin(true, true, true);
-
-    orimer::ble::InitClient();
-}
-
-void loop()
-{
-    orimer::ble::Update();
-
-    if (orimer::ble::Receive(g_State))
+    void InitializeSystem()
     {
-        Serial.printf(
-            "[MAIN] btn=0x%04X dir=%d\n",
-            g_State.btn,
-            g_State.dir
-        );
+        Serial.begin(115200);
+        delay(2000);
+        M5.begin(true, true, true);
     }
 
-    delay(50);
+    void InitializeLed()
+    {
+        led::Initialize();
+    }
+
+    void InitializeBle()
+    {
+    #if defined (ORIMER_BLE_SERVER)
+        ble::InitServer("Atom-Server");
+    #endif // defined (ORIMER_BLE_SERVER)
+
+    #if defined (ORIMER_BLE_CLIENT)
+        ble::InitClient();
+    #endif // defined (ORIMER_BLE_CLIENT)
+    }
+
+    void UpdateBle()
+    {
+    #if defined (ORIMER_BLE_SERVER)
+        g_State.btn++;
+        g_State.dir = ble::StickDir::Right;
+        ble::Send(g_State);
+        delay(100);
+    #endif // defined (ORIMER_BLE_SERVER)
+
+    #if defined (ORIMER_BLE_CLIENT)
+        ble::Update();
+
+        if (ble::Receive(g_State))
+        {
+            led::SetLed(led::LedColor::Green);
+
+            Serial.printf(
+                "[MAIN] btn=0x%04X dir=%d\n",
+                g_State.btn,
+                g_State.dir
+            );
+        }
+
+        delay(50);
+    #endif // defined (ORIMER_BLE_CLIENT)
+    }
+
+} // namespace orimer
+
+void setup()
+{
+    orimer::InitializeSystem();
+    orimer::InitializeLed();
+    orimer::InitializeBle();
 }
 
-#endif // defined (ORIMER_BLE_CLIENT)
+void loop()
+{
+    orimer::UpdateBle();
+}
