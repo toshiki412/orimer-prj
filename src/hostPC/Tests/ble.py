@@ -1,4 +1,5 @@
 import asyncio
+import struct
 from bleak import BleakScanner, BleakClient
 
 SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
@@ -7,17 +8,37 @@ CHAR_UUID    = "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 
 def handle_notify(sender: int, data: bytearray):
     """
-    Notify 受信コールバック
-    ControlState が生で飛んでくる想定
+    Atom → Windows Notify 受信
     """
     print(f"[Notify] from {sender}: {list(data)}")
 
-    # 必要ならここで unpack
-    # 例: btn(uint8), dir(uint8)
-    if len(data) >= 2:
-        btn = data[0]
-        dir = data[1]
-        print(f"  btn={btn}, dir={dir}")
+    # ControlState = uint16 btn + uint8 dir (+ padding)
+    if len(data) >= 3:
+        btn, dir = struct.unpack_from("<HB", data, 0)
+        print(f"  btn=0x{btn:04X}, dir={dir}")
+
+
+async def send_loop(client: BleakClient):
+    """
+    Windows → Atom 送信ループ
+    """
+    btn = 0
+
+    while True:
+        btn += 1
+        dir = 2  # Right とか適当に
+
+        # Atom 側 ControlState と **完全一致** させること
+        payload = struct.pack("<HB", btn, dir)
+
+        print(f"[Write] btn=0x{btn:04X}, dir={dir}")
+        await client.write_gatt_char(
+            CHAR_UUID,
+            payload,
+            response=False   # WRITE_NR 想定
+        )
+
+        await asyncio.sleep(1.0)
 
 
 async def main():
@@ -41,7 +62,6 @@ async def main():
     async with BleakClient(target.address) as client:
         print("Connected")
 
-        # Characteristic 確認
         services = await client.get_services()
         char = services.get_characteristic(CHAR_UUID)
         if char is None:
@@ -51,9 +71,8 @@ async def main():
         print("Subscribing to Notify...")
         await client.start_notify(CHAR_UUID, handle_notify)
 
-        print("Waiting for notifications (Ctrl+C to exit)...")
-        while True:
-            await asyncio.sleep(1)
+        print("Start send loop")
+        await send_loop(client)
 
 
 if __name__ == "__main__":

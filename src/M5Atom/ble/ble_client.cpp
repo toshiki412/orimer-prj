@@ -24,13 +24,13 @@ public:
     {
     }
 
-    void onConnect(NimBLEClient*) override
+    void onConnect(NimBLEClient* pClient) override
     {
         Serial.println("[BLE][Client] Connected");
         m_pOwner->OnConnected();
     }
 
-    void onDisconnect(NimBLEClient*) override
+    void onDisconnect(NimBLEClient* pClient, int reason) override
     {
         Serial.println("[BLE][Client] Disconnected");
         m_pOwner->OnDisconnected();

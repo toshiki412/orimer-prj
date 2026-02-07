@@ -17,6 +17,28 @@ NimBLECharacteristic* g_pCharacteristic = nullptr;
 
 namespace orimer::ble {
 
+class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
+{
+public:
+    explicit CharacteristicCallbacks(BleServer* owner)
+        : m_pOwner(owner) {}
+
+    void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override
+    {
+        auto value = pCharacteristic->getValue();
+        if (value.size() != sizeof(ControlState))
+            return;
+
+        ControlState state;
+        memcpy(&state, value.data(), sizeof(ControlState));
+
+        m_pOwner->OnReceive(state);
+    }
+
+private:
+    BleServer* m_pOwner;
+};
+
 class ServerCallbacks : public NimBLEServerCallbacks
 {
 public:
@@ -64,13 +86,17 @@ void BleServer::Begin(const char* pDeviceName)
         pService->createCharacteristic(
             k_CharacteristicUuid,
             NIMBLE_PROPERTY::READ |
+            NIMBLE_PROPERTY::WRITE |
             NIMBLE_PROPERTY::NOTIFY
         );
+    
+    g_pCharacteristic->setCallbacks(
+        new CharacteristicCallbacks(this)
+    );
 
     pService->start();
 
-    NimBLEAdvertising* pAdvertising =
-        NimBLEDevice::getAdvertising();
+    m_pAdvertising = NimBLEDevice::getAdvertising();
     
     NimBLEAdvertisementData advData;
     NimBLEAdvertisementData scanData;
@@ -79,10 +105,10 @@ void BleServer::Begin(const char* pDeviceName)
     advData.addServiceUUID(k_ServiceUuid);
     scanData.addServiceUUID(k_ServiceUuid);
 
-    pAdvertising->setAdvertisementData(advData);
-    pAdvertising->setScanResponseData(scanData);
+    m_pAdvertising->setAdvertisementData(advData);
+    m_pAdvertising->setScanResponseData(scanData);
 
-    pAdvertising->start();
+    m_pAdvertising->start();
 
     Serial.println("[BLE][Server] Advertising start");
 }
@@ -121,6 +147,21 @@ void BleServer::OnConnected()
 void BleServer::OnDisconnected()
 {
     m_IsConnected = false;
+    
+    if (m_pAdvertising != nullptr)
+    {
+        Serial.println("[BLE][Server] Restart advertising");
+        m_pAdvertising->start();
+    }
+}
+
+void BleServer::OnReceive(ControlState state)
+{
+    Serial.printf(
+        "[BLE][Server] Write btn=0x%04X dir=%d\n",
+        state.btn,
+        state.dir
+    );
 }
 
 } // namespace orimer::ble
