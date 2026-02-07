@@ -50,6 +50,20 @@ namespace
         g_State.btn++;
         g_State.dir = ble::StickDir::Right;
         ble::Send(g_State);
+
+        if (ble::Receive(g_State))
+        {
+            led::SetLed(led::LedColor::Green);
+
+            Serial.printf(
+                "[MAIN] btn=0x%04X dir=%d\n",
+                g_State.btn,
+                g_State.dir
+            );
+        }
+
+        ble::Update();
+
         delay(100);
     #endif // defined (ORIMER_BLE_SERVER)
 

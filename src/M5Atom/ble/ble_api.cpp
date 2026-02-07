@@ -47,6 +47,11 @@ void InitClient(void)
 
 void Update(void)
 {
+    if (g_Mode == Mode::Server && g_pServer != nullptr)
+    {
+        g_pServer->Update();
+    }
+    
     if (g_Mode == Mode::Client && g_pClient != nullptr)
     {
         g_pClient->Update();
@@ -66,23 +71,33 @@ bool Send(const ControlState& state)
         return false;
     }
 
-    g_pServer->Update(state);
+    g_pServer->SendState(state);
     return true;
 }
 
 bool Receive(ControlState& state)
 {
-    if (g_Mode != Mode::Client || g_pClient == nullptr)
+    switch (g_Mode)
     {
-        return false;
+        case Mode::Server:
+            if (!g_pServer->IsConnected())
+            {
+                return false;
+            }
+            state = g_pServer->GetState();
+            break;
+        case Mode::Client:
+        {
+            if (!g_pClient->IsConnected())
+            {
+                return false;
+            }
+            state = g_pClient->GetState();
+        }
+        default:
+            break;
     }
 
-    if (!g_pClient->IsConnected())
-    {
-        return false;
-    }
-
-    state = g_pClient->GetState();
     return true;
 }
 

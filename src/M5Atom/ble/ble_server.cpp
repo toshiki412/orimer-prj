@@ -113,25 +113,34 @@ void BleServer::Begin(const char* pDeviceName)
     Serial.println("[BLE][Server] Advertising start");
 }
 
-void BleServer::Update(const ControlState& state)
+void BleServer::Update()
 {
     if (!m_IsConnected || g_pCharacteristic == nullptr)
     {
         Serial.println("null data");
         return;
     }
+    g_pCharacteristic->notify();
+    Serial.println("notify done");
+}
 
+void BleServer::SendState(const ControlState& state)
+{
     g_pCharacteristic->setValue(
         reinterpret_cast<const uint8_t*>(&state),
         sizeof(ControlState)
     );
-    g_pCharacteristic->notify();
 
     Serial.printf(
-        "[BLE][Server] Notify btn=0x%04X dir=%d\n",
+        "[BLE][Server] SetValue btn=0x%04X dir=%d\n",
         state.btn,
         state.dir
     );
+}
+
+ControlState BleServer::GetState() const
+{
+    return m_State;
 }
 
 bool BleServer::IsConnected() const
@@ -157,11 +166,7 @@ void BleServer::OnDisconnected()
 
 void BleServer::OnReceive(ControlState state)
 {
-    Serial.printf(
-        "[BLE][Server] Write btn=0x%04X dir=%d\n",
-        state.btn,
-        state.dir
-    );
+    m_State = state;
 }
 
 } // namespace orimer::ble

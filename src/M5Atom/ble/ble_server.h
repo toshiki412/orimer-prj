@@ -13,8 +13,9 @@ public:
     BleServer();
 
     void Begin(const char* pDeviceName);
-    void Update(const ControlState& state);
-
+    void Update();
+    void SendState(const ControlState& state);
+    ControlState GetState() const;
     bool IsConnected() const;
 
     void OnConnected();
@@ -23,6 +24,7 @@ public:
 
 private:
     NimBLEAdvertising* m_pAdvertising = nullptr;
+    ControlState m_State{};
     bool m_IsConnected;
 };
 
