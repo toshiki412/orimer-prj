@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstddef>   // size_t
+#include <NimBLEDevice.h>
 
 // forward declaration（ヘッダでは宣言だけ）
 class NimBLERemoteCharacteristic;
@@ -33,16 +34,33 @@ class BleClient
 public:
     BleClient();
 
+    static BleClient* GetInstance()
+    {
+        static BleClient s_Instance;
+        return &s_Instance;
+    }
+
     void Begin();
     void Update();
+    void Register(const NimBLEAddress& addr);
+    void UnRegister();
 
     bool IsConnected() const;
+    void SetState(ControlState state);
     const ControlState& GetState() const;
 
     void OnConnected();
     void OnDisconnected();
 
 private:
+    void StartScan();
+    bool TryConnect();
+
+    NimBLEClient* m_pClient = nullptr;
+    NimBLERemoteCharacteristic* m_pChar = nullptr;
+    NimBLEAddress m_DeviceAddr{};
+    bool m_HasDeviceAddr = false;
+    uint32_t m_LastRetryMs{};
     bool m_IsConnected { false };
     ControlState m_State {};
 };

@@ -23,7 +23,10 @@ namespace orimer::led {
     {
         switch (color)
         {
-            case LedColor::RED:
+            case LedColor::Off:
+                g_Leds[0] = CRGB::Black;
+                break;
+            case LedColor::Red:
                 g_Leds[0] = CRGB::Red;
                 break;
             case LedColor::Green:

@@ -4,9 +4,10 @@
 
 #include "led/led_api.h"
 #include "led/led_types.h"
+#include "button/button_api.h"
 
-#define ORIMER_BLE_SERVER
-// #define ORIMER_BLE_CLIENT
+// #define ORIMER_BLE_SERVER
+#define ORIMER_BLE_CLIENT
 
 
 namespace orimer{
@@ -33,10 +34,15 @@ namespace
         led::Initialize();
     }
 
+    void InitializeButton()
+    {
+        button::Initialize();
+    }
+
     void InitializeBle()
     {
     #if defined (ORIMER_BLE_SERVER)
-        ble::InitServer("Atom-Server");
+        ble::InitServer();
     #endif // defined (ORIMER_BLE_SERVER)
 
     #if defined (ORIMER_BLE_CLIENT)
@@ -46,14 +52,9 @@ namespace
 
     void UpdateBle()
     {
-    #if defined (ORIMER_BLE_SERVER)
         g_State.btn++;
         g_State.dir = ble::StickDir::Right;
         ble::Send(g_State);
-        delay(100);
-    #endif // defined (ORIMER_BLE_SERVER)
-
-    #if defined (ORIMER_BLE_CLIENT)
         ble::Update();
 
         if (ble::Receive(g_State))
@@ -67,8 +68,11 @@ namespace
             );
         }
 
-        delay(50);
-    #endif // defined (ORIMER_BLE_CLIENT)
+        if(!ble::IsConnected())
+        {
+            orimer::led::SetLed(orimer::led::LedColor::Red);
+        }
+        delay(100);
     }
 
 } // namespace orimer
@@ -77,7 +81,9 @@ void setup()
 {
     orimer::InitializeSystem();
     orimer::InitializeLed();
+    orimer::InitializeButton();
     orimer::InitializeBle();
+
 }
 
 void loop()
