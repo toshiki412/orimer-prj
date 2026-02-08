@@ -5,24 +5,13 @@ namespace orimer::fsr
 {
 
 /**
- * @brief FSR 状態データ
+ * @brief FSR の状態
  */
-struct State
+struct FsrState
 {
-    uint16_t raw;        // ADC 生値
-    float    normalized; // 0.0 ~ 1.0
-    float    force;      // 擬似荷重
-    bool     pressed;    // 閾値判定
-};
-
-/**
- * @brief FSR API 動作モード
- */
-enum class Mode : uint8_t
-{
-    None = 0,
-    Ready,
-    Error
+    uint16_t raw;      // ADC 生値 (0-4095)
+    float    voltage;  // 電圧 [V]
+    float    force;    // 推定荷重（正規化 or 仮単位）
 };
 
 } // namespace orimer::fsr
