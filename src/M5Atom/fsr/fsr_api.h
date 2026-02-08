@@ -5,57 +5,46 @@ namespace orimer::fsr
 {
 
 /**
- * @brief FSR を初期化する
+ * @brief FSR センサを初期化する
  *
- * - ADC を初期化
- * - 内部状態をリセット
- *
- * @param[in] adcPin
- *   FSR を接続した ADC ピン
+ * - 内部状態を初期化
  *
  * @note
  * - setup() から 1 回だけ呼ぶこと
  * - loop() 内で呼ばないこと
  */
-void Initialize(uint8_t adcPin);
+void Initialize();
 
 /**
  * @brief FSR 内部処理を更新する
  *
- * - ADC 読み取り
- * - 正規化
- * - 押下判定
+ * - ADC を読み取る
+ * - 内部状態を更新する
  *
  * @note
  * - loop() 内で毎回呼ぶこと
  */
-void Update(void);
+void Update();
 
 /**
  * @brief 最新の FSR 状態を取得する
  *
  * @param[out] state
- *   現在の状態（成功時のみ更新）
+ *   取得した状態（成功時のみ上書き）
  *
  * @return
- * - true  : 正常に取得
- * - false : 未初期化 / エラー
+ * - true  : 有効なデータを取得
+ * - false : 未初期化
  */
-bool GetState(State& state);
+bool GetState(FsrState& state);
 
 /**
- * @brief 押されているかを取得する
+ * @brief FSR が初期化済みかどうか
  *
  * @return
- * - true  : 押されている
- * - false : 押されていない / 未初期化
+ * - true  : 初期化済み
+ * - false : 未初期化
  */
-bool IsPressed(void);
-
-/**
- * @brief 動作モードを取得する
- */
-Mode GetMode(void);
+bool IsInitialized();
 
 } // namespace orimer::fsr
-

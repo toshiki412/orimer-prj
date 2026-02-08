@@ -4,10 +4,14 @@
 
 #include "led/led_api.h"
 #include "led/led_types.h"
+
 #include "button/button_api.h"
 
-// #define ORIMER_BLE_SERVER
-#define ORIMER_BLE_CLIENT
+#include "fsr/fsr_api.h"
+#include "fsr/fsr_types.h"
+
+#define ORIMER_BLE_SERVER
+// #define ORIMER_BLE_CLIENT
 
 
 namespace orimer{
@@ -29,25 +33,17 @@ namespace
         M5.begin(true, true, true);
     }
 
-    void InitializeLed()
+    void InitializeModules()
     {
+        fsr::Initialize();
         led::Initialize();
-    }
-
-    void InitializeButton()
-    {
         button::Initialize();
-    }
 
-    void InitializeBle()
-    {
-    #if defined (ORIMER_BLE_SERVER)
-        ble::InitServer();
-    #endif // defined (ORIMER_BLE_SERVER)
-
-    #if defined (ORIMER_BLE_CLIENT)
-        ble::InitClient();
-    #endif // defined (ORIMER_BLE_CLIENT)
+        #if defined (ORIMER_BLE_SERVER)
+            ble::InitServer();
+        #elif defined (ORIMER_BLE_CLIENT)
+            ble::InitClient();
+        #endif
     }
 
     void UpdateBle()
@@ -72,7 +68,22 @@ namespace
         {
             orimer::led::SetLed(orimer::led::LedColor::Red);
         }
-        delay(100);
+    }
+
+    void UpdateFsr()
+    {
+        fsr::Update();
+
+        fsr::FsrState state;
+        if (fsr::GetState(state))
+        {
+            Serial.printf(
+                "[FSR] raw=%d voltage=%.2f force=%.1f\n",
+                state.raw,
+                state.voltage,
+                state.force
+            );
+        }
     }
 
 } // namespace orimer
@@ -80,13 +91,12 @@ namespace
 void setup()
 {
     orimer::InitializeSystem();
-    orimer::InitializeLed();
-    orimer::InitializeButton();
-    orimer::InitializeBle();
-
+    orimer::InitializeModules();
 }
 
 void loop()
 {
+    orimer::UpdateFsr();
     orimer::UpdateBle();
+    delay(100);
 }
