@@ -11,8 +11,6 @@ constexpr char k_ServiceUuid[] =
 constexpr char k_CharacteristicUuid[] =
     "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
-NimBLECharacteristic* g_pCharacteristic = nullptr;
-
 } // namespace
 
 namespace orimer::ble {
@@ -67,11 +65,12 @@ BleServer::BleServer()
 {
 }
 
-void BleServer::Begin(const char* pDeviceName)
+void BleServer::Begin()
 {
     Serial.println("[BLE][Server] Begin");
 
-    NimBLEDevice::init(pDeviceName);
+    NimBLEDevice::init("Atom-Server");
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9);
 
     NimBLEServer* pServer =
         NimBLEDevice::createServer();
@@ -82,7 +81,7 @@ void BleServer::Begin(const char* pDeviceName)
     NimBLEService* pService =
         pServer->createService(k_ServiceUuid);
 
-    g_pCharacteristic =
+    m_pChar =
         pService->createCharacteristic(
             k_CharacteristicUuid,
             NIMBLE_PROPERTY::READ |
@@ -90,7 +89,7 @@ void BleServer::Begin(const char* pDeviceName)
             NIMBLE_PROPERTY::NOTIFY
         );
     
-    g_pCharacteristic->setCallbacks(
+    m_pChar->setCallbacks(
         new CharacteristicCallbacks(this)
     );
 
@@ -115,18 +114,18 @@ void BleServer::Begin(const char* pDeviceName)
 
 void BleServer::Update()
 {
-    if (!m_IsConnected || g_pCharacteristic == nullptr)
+    if (!m_IsConnected || m_pChar == nullptr)
     {
         Serial.println("null data");
         return;
     }
-    g_pCharacteristic->notify();
+    m_pChar->notify();
     Serial.println("notify done");
 }
 
 void BleServer::SendState(const ControlState& state)
 {
-    g_pCharacteristic->setValue(
+    m_pChar->setValue(
         reinterpret_cast<const uint8_t*>(&state),
         sizeof(ControlState)
     );

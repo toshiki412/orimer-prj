@@ -14,8 +14,6 @@ constexpr char k_CharacteristicUuid[] =
 
 namespace orimer::ble {
 
-static BleClient* g_pSelf = nullptr;
-
 class ClientCallbacks : public NimBLEClientCallbacks
 {
 public:
@@ -40,6 +38,32 @@ private:
     BleClient* m_pOwner;
 };
 
+class ScanCallbacks : public NimBLEScanCallbacks {
+public:
+    explicit ScanCallbacks(BleClient* owner) : m_pOwner(owner) {}
+
+    void onResult(const NimBLEAdvertisedDevice* device) override {
+
+        if (!device->haveName()) return;
+        if (device->getName() != "Atom-Server") return;
+
+        Serial.printf(
+            "[SCAN] name='%s' addr=%s rssi=%d hasName=%d\n",
+            device->getName().c_str(),
+            device->getAddress().toString().c_str(),
+            device->getRSSI(),
+            device->haveName()
+        );
+
+        Serial.println("[BLE][Client] Target found, stop scan");
+        NimBLEDevice::getScan()->stop();   // ★ 必須
+        m_pOwner->Register(device->getAddress());
+    }
+
+private:
+    BleClient* m_pOwner;
+};
+
 void NotifyCallback(
     NimBLERemoteCharacteristic* pChar,
     uint8_t* pData,
@@ -47,21 +71,19 @@ void NotifyCallback(
     bool isNotify
 )
 {
-    if (g_pSelf == nullptr)
-    {
-        return;
-    }
-
     if (length != sizeof(ControlState))
     {
         return;
     }
 
+    ControlState state{};
     memcpy(
-        &g_pSelf->m_State,
+        &state,
         pData,
         sizeof(ControlState)
     );
+
+    BleClient::GetInstance()->SetState(state);
 }
 
 BleClient::BleClient()
@@ -73,75 +95,111 @@ BleClient::BleClient()
 
 void BleClient::Begin()
 {
-    g_pSelf = this;
+    NimBLEDevice::init("Atom-Client");
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9);
+    Serial.println("[BLE][Client] Begin");
 
-    NimBLEDevice::init("");
+    this->StartScan();
+}
 
-    NimBLEScan* pScan =
-        NimBLEDevice::getScan();
+void BleClient::Register(const NimBLEAddress& addr)
+{
+    m_DeviceAddr = addr;
+    m_HasDeviceAddr = true;
+}
+
+void BleClient::UnRegister()
+{
+}
+
+void BleClient::StartScan()
+{
+    auto pScan = NimBLEDevice::getScan();
+    pScan->clearResults();
     pScan->setActiveScan(true);
+    pScan->setInterval(45);
+    pScan->setWindow(15);
+    pScan->setDuplicateFilter(false);
+    pScan->setScanCallbacks(new ScanCallbacks(this), true);
+    pScan->start(5, true);
+    Serial.println("[BLE][Client] start scan");
+}
 
-    pScan->start(5, false);
-    NimBLEScanResults results =
-        pScan->getResults();
-
-    for (int i = 0; i < results.getCount(); ++i)
+bool BleClient::TryConnect()
+{
+    if(!m_HasDeviceAddr)
     {
-        const NimBLEAdvertisedDevice* pDevice =
-            results.getDevice(i);
-        
-        NimBLEUUID serviceUuid(k_ServiceUuid);
-        if (!pDevice->isAdvertisingService(serviceUuid))
-        {
-            continue;
-        }
-
-        NimBLEClient* pClient =
-            NimBLEDevice::createClient();
-        pClient->setClientCallbacks(
-            new ClientCallbacks(this)
-        );
-
-        if (!pClient->connect(pDevice))
-        {
-            continue;
-        }
-
-        NimBLERemoteService* pService =
-            pClient->getService(k_ServiceUuid);
-        if (pService == nullptr)
-        {
-            continue;
-        }
-
-        NimBLERemoteCharacteristic* pChar =
-            pService->getCharacteristic(
-                k_CharacteristicUuid
-            );
-        if (pChar == nullptr)
-        {
-            continue;
-        }
-
-        if (pChar->canNotify())
-        {
-            pChar->subscribe(true, NotifyCallback);
-            Serial.println(
-                "[BLE][Client] Subscribed"
-            );
-        }
-
-        break;
+        Serial.println("[BLE][Client] No server addr yet");
+        return false;
     }
+
+    Serial.println("[BLE][Client] Try connect...");
+
+    m_pClient = NimBLEDevice::createClient();
+    m_pClient->setClientCallbacks(
+        new ClientCallbacks(this)
+    );
+
+    if (!m_pClient->connect(m_DeviceAddr))
+    {
+        return false;
+    }
+
+    auto pService = m_pClient->getService(k_ServiceUuid);
+    if (pService == nullptr)
+    {
+        return false;
+    }
+
+    m_pChar = pService->getCharacteristic(k_CharacteristicUuid);
+    if (m_pChar == nullptr)
+    {
+        return false;
+    }
+
+    if (m_pChar->canNotify())
+    {
+        m_pChar->subscribe(true, NotifyCallback);
+        Serial.println(
+            "[BLE][Client] Subscribed"
+        );
+    }
+
+    return true;
 }
 
 void BleClient::Update()
 {
+    if (this->IsConnected())
+    {
+        return;
+    }
+
+    if(!m_HasDeviceAddr)
+    {
+        StartScan();
+        return;
+    }
+
+    const uint32_t now = millis();
+    if (now - m_LastRetryMs < 3000)
+    {
+        return;
+    }
+
+    m_LastRetryMs = now;
+
+    this->TryConnect();
 }
 
 bool BleClient::IsConnected() const
 {
     return m_IsConnected;
+}
+
+void BleClient::SetState(ControlState state)
+{
+    m_State = state;
 }
 
 const ControlState& BleClient::GetState() const
@@ -157,6 +215,14 @@ void BleClient::OnConnected()
 void BleClient::OnDisconnected()
 {
     m_IsConnected = false;
+    m_pChar = nullptr;
+    m_HasDeviceAddr = false;
+
+    if (m_pClient)
+    {
+        NimBLEDevice::deleteClient(m_pClient);
+        m_pClient = nullptr;
+    }
 }
 
 } // namespace orimer::ble

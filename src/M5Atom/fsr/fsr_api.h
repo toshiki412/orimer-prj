@@ -17,7 +17,7 @@ namespace orimer::fsr
  * - setup() から 1 回だけ呼ぶこと
  * - loop() 内で呼ばないこと
  */
-void Init(uint8_t adcPin);
+void Initialize(uint8_t adcPin);
 
 /**
  * @brief FSR 内部処理を更新する

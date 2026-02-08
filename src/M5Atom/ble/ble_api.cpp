@@ -13,17 +13,17 @@ namespace orimer::ble
         BleClient* g_pClient  = nullptr;
     }
 
-void InitServer(const char* pDeviceName)
+void InitServer()
 {
     delete g_pClient;
     g_pClient = nullptr;
 
     if (g_pServer == nullptr)
     {
-        g_pServer = new BleServer();
+        g_pServer = BleServer::GetInstance();
     }
 
-    g_pServer->Begin(pDeviceName);
+    g_pServer->Begin();
     g_Mode = Mode::Server;
 
     Serial.println("[BLE][API] Init Server");
@@ -36,7 +36,7 @@ void InitClient(void)
 
     if (g_pClient == nullptr)
     {
-        g_pClient = new BleClient();
+        g_pClient = BleClient::GetInstance();
     }
 
     g_pClient->Begin();

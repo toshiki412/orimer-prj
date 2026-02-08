@@ -12,7 +12,7 @@ static Mode    s_mode = Mode::None;
 // 設定値
 static constexpr float PRESS_THRESHOLD = 0.10f;
 
-void Init(uint8_t adcPin)
+void Initialize(uint8_t adcPin)
 {
     if (s_fsr) {
         delete s_fsr;

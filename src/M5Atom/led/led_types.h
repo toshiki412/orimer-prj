@@ -4,7 +4,8 @@
 namespace orimer::led {
     enum class LedColor
     {
-        RED,
+        Off,
+        Red,
         Green,
         Blue,
     };

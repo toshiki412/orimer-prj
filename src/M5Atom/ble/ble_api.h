@@ -11,15 +11,13 @@ namespace orimer::ble
  * - Characteristic は ControlState を送信する用途
  * - すでに Client として初期化されていた場合は Client を破棄する
  *
- * @param[in] pDeviceName
- *   Advertise に使用するデバイス名（nullptr 不可）
  *
  * @note
  * - setup() から 1 回だけ呼ぶこと
  * - loop() 内で呼ばないこと
  * - Server / Client の同時使用は不可
  */
-void InitServer(const char* pDeviceName);
+void InitServer();
 
 /**
  * @brief BLE を Client モードで初期化する
