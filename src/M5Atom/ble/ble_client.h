@@ -46,8 +46,8 @@ public:
     void UnRegister();
 
     bool IsConnected() const;
-    void SetState(ControlState state);
-    const ControlState& GetState() const;
+    void SetPacket(BlePacket packet);
+    const BlePacket& GetPacket() const;
 
     void OnConnected();
     void OnDisconnected();
@@ -62,7 +62,7 @@ private:
     bool m_HasDeviceAddr = false;
     uint32_t m_LastRetryMs{};
     bool m_IsConnected { false };
-    ControlState m_State {};
+    BlePacket m_Packet{};
 };
 
 } // namespace orimer::ble

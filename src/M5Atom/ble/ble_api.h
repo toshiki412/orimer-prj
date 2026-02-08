@@ -8,7 +8,7 @@ namespace orimer::ble
  * @brief BLE を Server モードで初期化する
  *
  * - BLE GATT Server を起動し、Advertise を開始する
- * - Characteristic は ControlState を送信する用途
+ * - Characteristic は BlePacket を送信する用途
  * - すでに Client として初期化されていた場合は Client を破棄する
  *
  *
@@ -46,9 +46,9 @@ void InitClient(void);
 void Update(void);
 
 /**
- * @brief ControlState を BLE 経由で送信する（Server → Client）
+ * @brief BlePacket を BLE 経由で送信する（Server → Client）
  *
- * @param[in] state
+ * @param[in] packet
  *   送信する制御データ
  *
  * @return
@@ -60,12 +60,12 @@ void Update(void);
  * - 未接続時に呼んでもクラッシュしない
  * - Notify を使用するため Client 側で onNotify が必要
  */
-bool Send(const ControlState& state);
+bool Send(const BlePacket& packet);
 
 /**
- * @brief BLE 経由で受信した ControlState を取得する
+ * @brief BLE 経由で受信した BlePacket を取得する
  *
- * @param[out] state
+ * @param[out] packet
  *   受信した制御データ（成功時のみ上書きされる）
  *
  * @return
@@ -76,7 +76,7 @@ bool Send(const ControlState& state);
  * - 受信データは最後に受信したものが保持される
  * - Server 側からの Notify を前提とする
  */
-bool Receive(ControlState& state);
+bool Receive(BlePacket& packet);
 
 /**
  * @brief BLE 接続状態を取得する
@@ -103,6 +103,14 @@ bool IsConnected(void);
  * - デバッグや状態分岐に使用
  */
 Mode GetMode(void);
+
+
+BlePacket GetEmptyPacket(uint8_t type);
+
+void LogPacket(
+    const char* prefix,
+    const BlePacket& packet
+);
 
 } // namespace orimer::ble
 
