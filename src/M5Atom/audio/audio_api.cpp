@@ -4,6 +4,13 @@
 #include <M5Atom.h>
 
 namespace orimer::audio {
+namespace
+{
+    inline uint32_t Clamp(uint32_t value, uint32_t min_val, uint32_t max_val) 
+    {
+        return (value < min_val) ? min_val : (value > max_val) ? max_val : value;
+    }
+}
 
 void Initialize()
 {
@@ -36,34 +43,43 @@ void Initialize()
     i2s_set_pin(I2S_NUM_0, &pin_config);
 }
 
-
-void Beep(BeepTone tone)
+void BeepEx(uint32_t freq, uint32_t timeMs)
 {
-    static int16_t buffer[1024];
-    uint32_t freq = 0, duration_ms = 0;
+    static int16_t pBuffer[1024];
+    constexpr uint32_t SampleRate = 16000;
+    const uint32_t samples = (SampleRate * timeMs) / 1000;
 
-    switch (tone) {
-        case BeepTone::Short: freq = 2000; duration_ms = 100; break;
-        case BeepTone::Long:  freq = 1500; duration_ms = 400; break;
-        case BeepTone::Error: freq = 500;  duration_ms = 600; break;
-    }
-
-    const uint32_t sample_rate = 16000;
-    const uint32_t samples = (sample_rate * duration_ms) / 1000;
+    constexpr uint32_t MaxFreq = 2000;
+    constexpr uint32_t MinFreq = 500;
+    freq = Clamp(freq, MinFreq, MaxFreq);
 
     for (uint32_t i = 0; i < samples; i++) {
-        float t = (float)i / sample_rate;
-        buffer[i % 1024] = (int16_t)(sinf(2.0f * M_PI * freq * t) * 12000);
+        float t = (float)i / SampleRate;
+        pBuffer[i % 1024] = (int16_t)(sinf(2.0f * M_PI * freq * t) * 12000);
 
         if ((i % 1024) == 1023) {
             size_t written;
-            i2s_write(I2S_NUM_0, buffer, sizeof(buffer), &written, portMAX_DELAY);
+            i2s_write(I2S_NUM_0, pBuffer, sizeof(pBuffer), &written, portMAX_DELAY);
         }
     }
 
-    memset(buffer, 0, sizeof(buffer));
+    memset(pBuffer, 0, sizeof(pBuffer));
     size_t written;
-    i2s_write(I2S_NUM_0, buffer, sizeof(buffer), &written, portMAX_DELAY);
+    i2s_write(I2S_NUM_0, pBuffer, sizeof(pBuffer), &written, portMAX_DELAY);
+}
+
+void Beep(BeepTone tone)
+{
+    uint32_t freq = 0;
+    uint32_t timeMs = 0;
+
+    switch (tone) {
+        case BeepTone::Short: freq = 2000; timeMs = 100; break;
+        case BeepTone::Long:  freq = 1500; timeMs = 400; break;
+        case BeepTone::Error: freq = 500;  timeMs = 600; break;
+    }
+
+    BeepEx(freq, timeMs);
 }
 
 

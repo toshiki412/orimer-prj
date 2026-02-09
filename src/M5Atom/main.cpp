@@ -69,9 +69,11 @@ namespace
 
         auto scaledForce = static_cast<uint8_t>(fsrState.force / 2500.f);
         g_Packet.data[0] = scaledForce < 255 ? scaledForce : 255;
-        if(fsrState.force > 2000)
+        if(fsrState.force > 100)
         {
-            audio::Beep(audio::BeepTone::Long);
+            uint32_t freq = static_cast<uint32_t>(fsrState.force);
+            uint32_t timeMs = 100;
+            audio::BeepEx(freq, timeMs);
         }
 #endif // defined (ORIMER_HUEDEVICE)
 
