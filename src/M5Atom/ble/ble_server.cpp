@@ -24,13 +24,13 @@ public:
     void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override
     {
         auto value = pCharacteristic->getValue();
-        if (value.size() != sizeof(ControlState))
+        if (value.size() != sizeof(BlePacket))
             return;
 
-        ControlState state;
-        memcpy(&state, value.data(), sizeof(ControlState));
+        BlePacket packet{};
+        memcpy(&packet, value.data(), sizeof(BlePacket));
 
-        m_pOwner->OnReceive(state);
+        m_pOwner->OnReceive(packet);
     }
 
 private:
@@ -123,23 +123,17 @@ void BleServer::Update()
     Serial.println("notify done");
 }
 
-void BleServer::SendState(const ControlState& state)
+void BleServer::SendPacket(const BlePacket& packet)
 {
     m_pChar->setValue(
-        reinterpret_cast<const uint8_t*>(&state),
-        sizeof(ControlState)
-    );
-
-    Serial.printf(
-        "[BLE][Server] SetValue btn=0x%04X dir=%d\n",
-        state.btn,
-        state.dir
+        reinterpret_cast<const uint8_t*>(&packet),
+        sizeof(BlePacket)
     );
 }
 
-ControlState BleServer::GetState() const
+BlePacket BleServer::GetPacket() const
 {
-    return m_State;
+    return m_Packet;
 }
 
 bool BleServer::IsConnected() const
@@ -163,9 +157,9 @@ void BleServer::OnDisconnected()
     }
 }
 
-void BleServer::OnReceive(ControlState state)
+void BleServer::OnReceive(BlePacket packet)
 {
-    m_State = state;
+    m_Packet = packet;
 }
 
 } // namespace orimer::ble

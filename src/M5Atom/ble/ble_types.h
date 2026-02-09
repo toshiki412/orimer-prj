@@ -3,19 +3,12 @@
 
 namespace orimer::ble {
 
-enum StickDir : uint8_t
+// 16bytes
+struct BlePacket
 {
-    Neutral = 0,
-    Up,
-    Down,
-    Left,
-    Right,
-};
-
-struct ControlState
-{
-    uint16_t btn;
-    uint8_t  dir;
+    uint8_t type;
+    uint8_t seq;
+    uint8_t data[14];
 };
 
 /**

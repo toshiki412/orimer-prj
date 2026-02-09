@@ -71,26 +71,24 @@ void NotifyCallback(
     bool isNotify
 )
 {
-    if (length != sizeof(ControlState))
+    if (length != sizeof(BlePacket))
     {
         return;
     }
 
-    ControlState state{};
+    BlePacket packet{};
     memcpy(
-        &state,
+        &packet,
         pData,
-        sizeof(ControlState)
+        sizeof(BlePacket)
     );
 
-    BleClient::GetInstance()->SetState(state);
+    BleClient::GetInstance()->SetPacket(packet);
 }
 
 BleClient::BleClient()
     : m_IsConnected(false)
 {
-    m_State.btn = 0;
-    m_State.dir = Neutral;
 }
 
 void BleClient::Begin()
@@ -197,14 +195,14 @@ bool BleClient::IsConnected() const
     return m_IsConnected;
 }
 
-void BleClient::SetState(ControlState state)
+void BleClient::SetPacket(BlePacket packet)
 {
-    m_State = state;
+    m_Packet = packet;
 }
 
-const ControlState& BleClient::GetState() const
+const BlePacket& BleClient::GetPacket() const
 {
-    return m_State;
+    return m_Packet;
 }
 
 void BleClient::OnConnected()

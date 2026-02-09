@@ -20,18 +20,18 @@ public:
 
     void Begin();
     void Update();
-    void SendState(const ControlState& state);
-    ControlState GetState() const;
+    void SendPacket(const BlePacket& packet);
+    BlePacket GetPacket() const;
     bool IsConnected() const;
 
     void OnConnected();
     void OnDisconnected();
-    void OnReceive(ControlState state);
+    void OnReceive(BlePacket state);
 
 private:
     NimBLECharacteristic* m_pChar = nullptr;
     NimBLEAdvertising* m_pAdvertising = nullptr;
-    ControlState m_State{};
+    BlePacket m_Packet{};
     bool m_IsConnected;
 };
 

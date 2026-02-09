@@ -58,7 +58,7 @@ void Update(void)
     }
 }
 
-bool Send(const ControlState& state)
+bool Send(const BlePacket& packet)
 {
     if (g_Mode != Mode::Server || g_pServer == nullptr)
     {
@@ -71,11 +71,11 @@ bool Send(const ControlState& state)
         return false;
     }
 
-    g_pServer->SendState(state);
+    g_pServer->SendPacket(packet);
     return true;
 }
 
-bool Receive(ControlState& state)
+bool Receive(BlePacket& packet)
 {
     switch (g_Mode)
     {
@@ -84,7 +84,7 @@ bool Receive(ControlState& state)
             {
                 return false;
             }
-            state = g_pServer->GetState();
+            packet = g_pServer->GetPacket();
             break;
         case Mode::Client:
         {
@@ -92,7 +92,7 @@ bool Receive(ControlState& state)
             {
                 return false;
             }
-            state = g_pClient->GetState();
+            packet = g_pClient->GetPacket();
         }
         default:
             break;
@@ -119,6 +119,44 @@ bool IsConnected(void)
 Mode GetMode(void)
 {
     return g_Mode;
+}
+
+BlePacket GetEmptyPacket(uint8_t type)
+{
+    BlePacket packet{};
+    packet.type = type;
+    packet.seq = 0;
+
+    for(int i = 0; i < 14; ++i)
+    {
+        packet.data[i] = 0;
+    }
+
+    return packet;
+}
+
+void LogPacket(
+    const char* prefix,
+    const BlePacket& packet
+)
+{
+    Serial.printf(
+        "[BLE][PKT][%s] type=0x%02X seq=%u data=",
+        prefix,
+        packet.type,
+        packet.seq
+    );
+
+    for (int i = 0; i < 14; ++i)
+    {
+        Serial.printf("%02X", packet.data[i]);
+        if (i != 13)
+        {
+            Serial.print(" ");
+        }
+    }
+
+    Serial.println();
 }
 
 } // namespace orimer::ble
