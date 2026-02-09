@@ -10,8 +10,11 @@
 #include "fsr/fsr_api.h"
 #include "fsr/fsr_types.h"
 
-// #define ORIMER_HUEDEVICE
-#define ORIMER_PIKMIN
+#include "audio/audio_api.h"
+#include "audio/audio_types.h"
+
+#define ORIMER_HUEDEVICE
+// #define ORIMER_PIKMIN
 
 namespace orimer{
 namespace
@@ -35,6 +38,7 @@ namespace
     void InitializeModules()
     {
 #if defined (ORIMER_HUEDEVICE)
+        audio::Initialize();
         fsr::Initialize();
         led::Initialize();
         button::Initialize();
@@ -62,7 +66,13 @@ namespace
                 fsrState.force
             );
         }
-        g_Packet.data[0] = static_cast<uint8_t>(fsrState.force / 2500.f);
+
+        auto scaledForce = static_cast<uint8_t>(fsrState.force / 2500.f);
+        g_Packet.data[0] = scaledForce < 255 ? scaledForce : 255;
+        if(fsrState.force > 2000)
+        {
+            audio::Beep(audio::BeepTone::Long);
+        }
 #endif // defined (ORIMER_HUEDEVICE)
 
         ble::Send(g_Packet);
