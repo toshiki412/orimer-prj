@@ -104,13 +104,26 @@ bool IsConnected(void);
  */
 Mode GetMode(void);
 
-
+/**
+ * @brief 空の BlePacket を取得する
+ *
+ * @param[in] type
+ *   packet.type に設定する値
+ *
+ * @return
+ * - BlePacket 構造体（data フィールドはゼロクリアされている）
+ */
 BlePacket GetEmptyPacket(uint8_t type);
 
-void LogPacket(
-    const char* prefix,
-    const BlePacket& packet
-);
+/**
+ * @brief BlePacket の内容をシリアル出力する
+ *
+ * @param[in] prefix
+ *   ログの接頭辞文字列
+ * @param[in] packet
+ *   出力する BlePacket 構造体
+ */
+void LogPacket(const char* prefix, const BlePacket& packet);
 
 } // namespace orimer::ble
 

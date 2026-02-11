@@ -83,3 +83,12 @@ tera term で COM を開いていてはいけない
 # これで一発
 python -m platformio run -e m5stack-atom --target upload --upload-port COM3
 
+# PlatformIO で複数の Core がインストールされていて、古いバージョンが検出されている．
+# # 現在の PIO Core 情報を確認
+pio system info
+
+# システム全体の不要な PIO を削除
+pio system prune --dry-run   # 削除対象の確認（重要）
+pio system prune             # 実際に削除
+
+

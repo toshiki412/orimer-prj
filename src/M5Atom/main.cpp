@@ -13,8 +13,13 @@
 #include "audio/audio_api.h"
 #include "audio/audio_types.h"
 
+#include "camera/camera_api.h"
+#include "camera/camera_types.h"
+
 #define ORIMER_HUEDEVICE
 // #define ORIMER_PIKMIN
+
+// #define USE_CAMERA
 
 namespace orimer{
 namespace
@@ -24,6 +29,26 @@ namespace
     void PrintInfo(const char* pName, const char* pInfo) noexcept
     {
         Serial.printf("[%s] %s\n", pName, pInfo);
+    }
+
+    void PrintError(const char* pName, const char* pError) noexcept
+    {
+        Serial.printf("[%s][ERROR] %s\n", pName, pError);
+    }
+
+    void DetectRobot()
+    {
+        camera::Blob blob;
+
+        if (camera::DetectRobot(&blob))
+        {
+            Serial.printf("Detected at (%d,%d) area=%d\n",
+                blob.x, blob.y, blob.area);
+        }
+        else
+        {
+            Serial.println("No red");
+        }
     }
 
 } // namespace
@@ -37,6 +62,11 @@ namespace
 
     void InitializeModules()
     {
+#if defined (USE_CAMERA)
+        camera::Initialize();
+        PrintInfo("Camera", "Initialized");
+#endif // defined (USE_CAMERA)
+
 #if defined (ORIMER_HUEDEVICE)
         audio::Initialize();
         fsr::Initialize();
@@ -76,6 +106,10 @@ namespace
             audio::BeepEx(freq, timeMs);
         }
 #endif // defined (ORIMER_HUEDEVICE)
+
+#if defined (USE_CAMERA)
+        DetectRobot();
+#endif // defined (USE_CAMERA)
 
         ble::Send(g_Packet);
         ble::Update();
