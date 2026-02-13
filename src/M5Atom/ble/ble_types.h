@@ -3,6 +3,12 @@
 
 namespace orimer::ble {
 
+struct ConnectionInfo
+{
+    uint16_t handle;
+    int rssi;
+};
+
 // 16bytes
 struct BlePacket
 {
