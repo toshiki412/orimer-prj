@@ -21,21 +21,37 @@
 #define MOTOR_R_CH0 4
 #define MOTOR_R_CH1 5
 
-class ACTION {
-private:
-    double m_tO;
-    double m_MTnW;
-    double m_MToW;
-    Motor m_MotorL;
-    Motor m_MotorR;
+#pragma once
 
+#include "motor.h"
+
+namespace orimer::action {
+
+class Action
+{
 public:
-    ACTION();
+    Action();
+
     void Initialize();
     void Finalize();
-    void SetTargetO(double tO);
+
+    // 制御入力
+    void SetTargetAngular(float targetW);
+
+    // 制御処理
     void LineControl();
-    void AutoMoving(double output_v);
+    void AutoMoving(float targetV);
     void ManualMoving(float targetV, float targetW);
-    void Odometory();
+
+    void Odometry();
+
+private:
+    motor::Motor m_MotorL;
+    motor::Motor m_MotorR;
+
+    float m_TargetW;     // target angular velocity
+    float m_CurrentW;    // current angular velocity
 };
+
+} // namespace orimer::action
+
