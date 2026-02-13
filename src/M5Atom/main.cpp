@@ -1,4 +1,6 @@
 #include <M5Atom.h>
+#include "config.h"
+
 #include "ble/ble_api.h"
 #include "ble/ble_types.h"
 
@@ -7,19 +9,21 @@
 
 #include "button/button_api.h"
 
-#include "fsr/fsr_api.h"
-#include "fsr/fsr_types.h"
+#if defined(ORIMER_HUEDEVICE)
+    #include "audio/audio_api.h"
+    #include "audio/audio_types.h"
+    #include "fsr/fsr_types.h"
+    #include "fsr/fsr_api.h"
+#endif // defined(ORIMER_HUEDEVICE)
 
-#include "audio/audio_api.h"
-#include "audio/audio_types.h"
+#if defined(ORIMER_PIKMIN)
+    #include "action/action_api.h"
+#endif // defined(ORIMER_PIKMIN)
 
-#include "camera/camera_api.h"
-#include "camera/camera_types.h"
-
-#define ORIMER_HUEDEVICE
-// #define ORIMER_PIKMIN
-
-// #define USE_CAMERA
+#if defined(USE_CAMERA)
+    #include "camera/camera_api.h"
+    #include "camera/camera_types.h"
+#endif // defined(USE_CAMERA)
 
 namespace orimer{
 namespace
@@ -38,6 +42,7 @@ namespace
 
     void DetectRobot()
     {
+    #if defined(USE_CAMERA)
         camera::Blob blob;
 
         if (camera::DetectRobot(&blob))
@@ -49,6 +54,7 @@ namespace
         {
             Serial.println("No red");
         }
+    #endif // defined(USE_CAMERA)
     }
 
 } // namespace
