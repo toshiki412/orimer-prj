@@ -2,6 +2,8 @@
 
 //! @file config.h
 //! @brief コンパイルオプション定義
+//! @author [orimer]
+//! @date 2025-03-01
 
 // hue device 用のコードを有効にする
 #define ORIMER_HUEDEVICE
