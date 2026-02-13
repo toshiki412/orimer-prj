@@ -166,10 +166,28 @@ bool BleClient::TryConnect()
     return true;
 }
 
+int BleClient::GetRssi() const
+{
+    if (m_pClient == nullptr)
+    {
+        return 0;
+    }
+
+    return m_Rssi;
+}
+
 void BleClient::Update()
 {
     if (this->IsConnected())
     {
+        if (m_pClient != nullptr)
+        {
+            constexpr float k_RssiFilterAlpha = 0.1f;
+            const float filteredRssi = (1.0f - k_RssiFilterAlpha) * m_Rssi + k_RssiFilterAlpha * m_pClient->getRssi();
+            m_Rssi = static_cast<int>(filteredRssi);
+        }
+
+        Serial.printf("[BLE][Client] Connected RSSI=%d\n", this->GetRssi());
         return;
     }
 

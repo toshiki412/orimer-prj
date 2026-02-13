@@ -76,12 +76,14 @@ pio device monitor --port COM3 --baud 115200
 COM PORT が見つからない場合は platformio.ini で指定して
 pio run -e m5stack-atom --target upload --upload-port COM3
 でできる
-USB のコードによってはできないものがある
 
 tera term で COM を開いていてはいけない
 
-# これで一発
+# buid + write
 python -m platformio run -e m5stack-atom --target upload --upload-port COM3
+
+# build + write (AtomS3R-CAM)
+python -m platformio run -e m5stack-atoms3 --target upload --upload-port COM4
 
 # PlatformIO で複数の Core がインストールされていて、古いバージョンが検出されている．
 # # 現在の PIO Core 情報を確認

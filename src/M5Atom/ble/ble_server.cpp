@@ -47,13 +47,25 @@ public:
     void onConnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo) override
     {
         Serial.println("[BLE][Server] Client connected");
-        m_pOwner->OnConnected();
+        const auto connHandle = connInfo.getConnHandle();
+        ConnectionInfo info{};
+        info.handle = connHandle;
+        info.rssi = 0;
+
+        m_pOwner->OnConnected(info);
+
+        pServer->startAdvertising();
     }
 
     void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override
     {
         Serial.printf("[BLE][Server] Client disconnected, reason=%d\n", reason);
-        m_pOwner->OnDisconnected();
+        const auto connHandle = connInfo.getConnHandle();
+        ConnectionInfo info{};
+        info.handle = connHandle;
+        info.rssi = 0;
+
+        m_pOwner->OnDisconnected(info);
     }
 
 private:
@@ -63,6 +75,7 @@ private:
 BleServer::BleServer()
     : m_IsConnected(false)
 {
+    m_Connections.clear();
 }
 
 void BleServer::Begin()
@@ -71,6 +84,7 @@ void BleServer::Begin()
 
     NimBLEDevice::init("Atom-Server");
     NimBLEDevice::setPower(ESP_PWR_LVL_P9);
+    // NimBLEDevice::setMaxConnections(ClientCountMax);
 
     NimBLEServer* pServer =
         NimBLEDevice::createServer();
@@ -141,15 +155,24 @@ bool BleServer::IsConnected() const
     return m_IsConnected;
 }
 
-void BleServer::OnConnected()
+void BleServer::OnConnected(const ConnectionInfo& info)
 {
+    m_Connections[info.handle] = info;
     m_IsConnected = true;
 }
 
-void BleServer::OnDisconnected()
+void BleServer::OnDisconnected(const ConnectionInfo& info)
 {
     m_IsConnected = false;
-    
+    if( m_Connections.find(info.handle) != m_Connections.end() )
+    {
+        m_Connections.erase(info.handle);
+    }
+    else
+    {
+        Serial.println("[BLE][Server] Warning: ConnHandle mismatch on disconnect");
+    }
+
     if (m_pAdvertising != nullptr)
     {
         Serial.println("[BLE][Server] Restart advertising");

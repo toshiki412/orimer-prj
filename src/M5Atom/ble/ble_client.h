@@ -49,6 +49,8 @@ public:
     void SetPacket(BlePacket packet);
     const BlePacket& GetPacket() const;
 
+    int GetRssi() const;
+
     void OnConnected();
     void OnDisconnected();
 
@@ -63,6 +65,7 @@ private:
     uint32_t m_LastRetryMs{};
     bool m_IsConnected { false };
     BlePacket m_Packet{};
+    int m_Rssi { 0 };
 };
 
 } // namespace orimer::ble

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map> 
 #include <cstdint>
 #include <NimBLEDevice.h>
 #include "ble_types.h"
@@ -24,14 +25,16 @@ public:
     BlePacket GetPacket() const;
     bool IsConnected() const;
 
-    void OnConnected();
-    void OnDisconnected();
+    void OnConnected(const ConnectionInfo& info);
+    void OnDisconnected(const ConnectionInfo& info);
     void OnReceive(BlePacket state);
 
 private:
+    static constexpr int ClientCountMax = 3;
     NimBLECharacteristic* m_pChar = nullptr;
     NimBLEAdvertising* m_pAdvertising = nullptr;
     BlePacket m_Packet{};
+    std::map<uint16_t, ConnectionInfo> m_Connections;
     bool m_IsConnected;
 };
 
