@@ -8,6 +8,7 @@
 class NimBLERemoteCharacteristic;
 
 #include "ble_types.h"
+#include "ble_config.h"
 
 namespace orimer::ble
 {
@@ -40,6 +41,14 @@ public:
         return &s_Instance;
     }
 
+    void SetTargetDeviceName(const std::string& name);
+    void SetTargetServiceUUID(const std::string& uuid);
+    void SetTargetCharacteristicUUID(const std::string& uuid);
+
+    std::string GetTargetDeviceName() const { return m_TargetDeviceName; }
+    std::string GetTargetServiceUUID() const { return m_TargetServiceUUID; }
+    std::string GetTargetCharacteristicUUID() const { return m_TargetCharacteristicUUID; }
+
     void Begin();
     void Update();
     void Register(const NimBLEAddress& addr);
@@ -66,6 +75,10 @@ private:
     bool m_IsConnected { false };
     BlePacket m_Packet{};
     int m_Rssi { 0 };
+
+    std::string m_TargetDeviceName{orimer::ble::atom::ServerName};
+    std::string m_TargetServiceUUID{orimer::ble::atom::ServiceUuid};
+    std::string m_TargetCharacteristicUUID{orimer::ble::atom::CharacteristicUuid};
 };
 
 } // namespace orimer::ble

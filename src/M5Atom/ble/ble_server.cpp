@@ -1,17 +1,9 @@
 #include "ble_server.h"
-
+#include "ble_types.h"
+#include "ble_config.h"
 #include <Arduino.h>
 #include <NimBLEDevice.h>
 
-namespace {
-
-constexpr char k_ServiceUuid[] =
-    "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
-
-constexpr char k_CharacteristicUuid[] =
-    "beb5483e-36e1-4688-b7f5-ea07361b26a8";
-
-} // namespace
 
 namespace orimer::ble {
 
@@ -82,7 +74,7 @@ void BleServer::Begin()
 {
     Serial.println("[BLE][Server] Begin");
 
-    NimBLEDevice::init("Atom-Server");
+    NimBLEDevice::init(orimer::ble::atom::ServerName);
     NimBLEDevice::setPower(ESP_PWR_LVL_P9);
     // NimBLEDevice::setMaxConnections(ClientCountMax);
 
@@ -93,11 +85,13 @@ void BleServer::Begin()
     );
 
     NimBLEService* pService =
-        pServer->createService(k_ServiceUuid);
+        pServer->createService(
+            orimer::ble::atom::ServiceUuid
+        );
 
     m_pChar =
         pService->createCharacteristic(
-            k_CharacteristicUuid,
+            orimer::ble::atom::CharacteristicUuid,
             NIMBLE_PROPERTY::READ |
             NIMBLE_PROPERTY::WRITE |
             NIMBLE_PROPERTY::NOTIFY
@@ -114,9 +108,9 @@ void BleServer::Begin()
     NimBLEAdvertisementData advData;
     NimBLEAdvertisementData scanData;
 
-    advData.setName("Atom-Server");
-    advData.addServiceUUID(k_ServiceUuid);
-    scanData.addServiceUUID(k_ServiceUuid);
+    advData.setName(orimer::ble::atom::ServerName);
+    advData.addServiceUUID(orimer::ble::atom::ServiceUuid);
+    scanData.addServiceUUID(orimer::ble::atom::ServiceUuid);
 
     m_pAdvertising->setAdvertisementData(advData);
     m_pAdvertising->setScanResponseData(scanData);

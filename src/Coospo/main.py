@@ -1,14 +1,20 @@
 import asyncio
 from bleak import BleakClient
 
-ADDRESS = "DB:24:45:F4:90:20"
+ADDRESS = "F0:D6:B5:F6:F0:48"
 HR_UUID = "00002a37-0000-1000-8000-00805f9b34fb"
 DURATION = 30  # 秒
 
 def handler(sender, data: bytearray):
-    hex_data = data.hex(" ")
-    dec_data = list(data)
-    print(f"[{sender}] len={len(data)} hex={hex_data} dec={dec_data}")
+    if sender.uuid == "00002a37-0000-1000-8000-00805f9b34fb":
+        flags = data[0]
+        if len(data) >= 2:
+            hr = data[1]  # uint8 心拍数
+            print(f"❤️ HR: {hr} bpm  (flags=0x{flags:02x})")
+        else:
+            print(f"⚠️ 短いデータ: {data.hex(' ')}")
+    else:
+        print(f"[{sender.uuid[-4:]}] {data.hex(' ')}")
 
 async def main():
     async with BleakClient(ADDRESS) as client:

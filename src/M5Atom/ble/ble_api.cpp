@@ -1,4 +1,6 @@
 #include "ble_api.h"
+#include "ble_config.h"
+#include "../config.h"
 
 #include <Arduino.h>
 #include "ble_server.h"
@@ -38,6 +40,16 @@ void InitClient(void)
     {
         g_pClient = BleClient::GetInstance();
     }
+
+#if defined(USE_COOSPO)
+    g_pClient->SetTargetDeviceName(orimer::ble::coospo::ServerName);
+    g_pClient->SetTargetServiceUUID(orimer::ble::coospo::ServiceUuid);
+    g_pClient->SetTargetCharacteristicUUID(orimer::ble::coospo::CharacteristicUuid);
+#else
+    g_pClient->SetTargetDeviceName(orimer::ble::atom::ServerName);
+    g_pClient->SetTargetServiceUUID(orimer::ble::atom::ServiceUuid);
+    g_pClient->SetTargetCharacteristicUUID(orimer::ble::atom::CharacteristicUuid);
+#endif
 
     g_pClient->Begin();
     g_Mode = Mode::Client;
