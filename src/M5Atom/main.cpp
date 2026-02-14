@@ -9,7 +9,7 @@
 
 #include "button/button_api.h"
 
-#if defined(USE_AUDIO)
+#if defined(USE_AUDIO) || defined(ORIMER_HUEDEVICE)
     #include "audio/audio_api.h"
     #include "audio/audio_types.h"
 #endif // defined(USE_AUDIO)
