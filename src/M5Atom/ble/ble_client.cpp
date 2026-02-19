@@ -1,16 +1,13 @@
 #include "ble_client.h"
+#include "ble_config.h"
+#include "../config.h"
+
+#if defined(USE_COOSPO)
+    #include "../coospo/coospo_api.h"
+#endif
 
 #include <Arduino.h>
 #include <NimBLEDevice.h>
-
-namespace
-{
-constexpr char k_ServiceUuid[] =
-    "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
-
-constexpr char k_CharacteristicUuid[] =
-    "beb5483e-36e1-4688-b7f5-ea07361b26a8";
-}
 
 namespace orimer::ble {
 
@@ -42,11 +39,8 @@ class ScanCallbacks : public NimBLEScanCallbacks {
 public:
     explicit ScanCallbacks(BleClient* owner) : m_pOwner(owner) {}
 
-    void onResult(const NimBLEAdvertisedDevice* device) override {
-
-        if (!device->haveName()) return;
-        if (device->getName() != "Atom-Server") return;
-
+    void onResult(const NimBLEAdvertisedDevice* device) override 
+    {
         Serial.printf(
             "[SCAN] name='%s' addr=%s rssi=%d hasName=%d\n",
             device->getName().c_str(),
@@ -54,6 +48,8 @@ public:
             device->getRSSI(),
             device->haveName()
         );
+
+        if(!device->isAdvertisingService(NimBLEUUID(m_pOwner->GetTargetServiceUUID()))) return;
 
         Serial.println("[BLE][Client] Target found, stop scan");
         NimBLEDevice::getScan()->stop();   // ★ 必須
@@ -71,10 +67,16 @@ void NotifyCallback(
     bool isNotify
 )
 {
+#if defined(USE_COOSPO)
+    orimer::coospo::Update(pData, length);
+    return;
+#endif
+
     if (length != sizeof(BlePacket))
     {
         return;
     }
+
 
     BlePacket packet{};
     memcpy(
@@ -89,6 +91,21 @@ void NotifyCallback(
 BleClient::BleClient()
     : m_IsConnected(false)
 {
+}
+
+void BleClient::SetTargetDeviceName(const std::string& name)
+{
+    m_TargetDeviceName = name;
+}
+
+void BleClient::SetTargetServiceUUID(const std::string& uuid)
+{
+    m_TargetServiceUUID = uuid;
+}
+
+void BleClient::SetTargetCharacteristicUUID(const std::string& uuid)
+{
+    m_TargetCharacteristicUUID = uuid;
 }
 
 void BleClient::Begin()
@@ -115,12 +132,12 @@ void BleClient::StartScan()
     auto pScan = NimBLEDevice::getScan();
     pScan->clearResults();
     pScan->setActiveScan(true);
-    pScan->setInterval(45);
-    pScan->setWindow(15);
+    pScan->setInterval(100);
+    pScan->setWindow(99);
     pScan->setDuplicateFilter(false);
     pScan->setScanCallbacks(new ScanCallbacks(this), true);
     pScan->start(5, true);
-    Serial.println("[BLE][Client] start scan");
+    // Serial.println("[BLE][Client] start scan");
 }
 
 bool BleClient::TryConnect()
@@ -143,13 +160,13 @@ bool BleClient::TryConnect()
         return false;
     }
 
-    auto pService = m_pClient->getService(k_ServiceUuid);
+    auto pService = m_pClient->getService(NimBLEUUID(m_TargetServiceUUID));
     if (pService == nullptr)
     {
         return false;
     }
 
-    m_pChar = pService->getCharacteristic(k_CharacteristicUuid);
+    m_pChar = pService->getCharacteristic(NimBLEUUID(m_TargetCharacteristicUUID));
     if (m_pChar == nullptr)
     {
         return false;

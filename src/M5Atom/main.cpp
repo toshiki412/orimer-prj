@@ -9,9 +9,12 @@
 
 #include "button/button_api.h"
 
-#if defined(ORIMER_HUEDEVICE)
+#if defined(USE_AUDIO) || defined(ORIMER_HUEDEVICE)
     #include "audio/audio_api.h"
     #include "audio/audio_types.h"
+#endif // defined(USE_AUDIO)
+
+#if defined(ORIMER_HUEDEVICE)
     #include "fsr/fsr_types.h"
     #include "fsr/fsr_api.h"
 #endif // defined(ORIMER_HUEDEVICE)
@@ -24,6 +27,10 @@
     #include "camera/camera_api.h"
     #include "camera/camera_types.h"
 #endif // defined(USE_CAMERA)
+
+#if defined(USE_COOSPO)
+    #include "coospo/coospo_api.h"
+#endif // defined(USE_COOSPO)
 
 namespace orimer{
 namespace
@@ -73,8 +80,11 @@ namespace
         PrintInfo("Camera", "Initialized");
 #endif // defined (USE_CAMERA)
 
+#if defined (ORIMER_HUEDEVICE) || defined (USE_AUDIO)
+    audio::Initialize();
+#endif // defined (ORIMER_HUEDEVICE) || defined (USE_AUDIO)
+
 #if defined (ORIMER_HUEDEVICE)
-        audio::Initialize();
         fsr::Initialize();
         led::Initialize();
         button::Initialize();
@@ -126,7 +136,21 @@ namespace
         if (ble::Receive(recvPacket))
         {
             ble::LogPacket("[Recv]",recvPacket);
-
+        #if defined(USE_COOSPO)
+            const auto heartRate = orimer::coospo::GetHeartRate();
+            Serial.printf("[Coospo] HeartRate=%d\n", heartRate);
+            if(heartRate > 60)
+            {
+                led::SetLed(led::LedColor::Green);
+            }
+            else
+            {
+                led::SetLed(led::LedColor::Blue);
+                #if defined(USE_AUDIO)
+                    audio::BeepEx(1000, 200);
+                #endif
+            }
+        #else
             if(recvPacket.data[0] > 200)
             {
                 led::SetLed(led::LedColor::Blue);
@@ -135,6 +159,7 @@ namespace
             {
                 led::SetLed(led::LedColor::Green);
             }
+        #endif
         }
 
         if(!ble::IsConnected())
